@@ -31,12 +31,6 @@ export function SplashGateway() {
     }
   }, [phase, sonshiSpinControls]);
 
-  useEffect(() => {
-    if (phase !== "complete") return;
-    const timer = setTimeout(() => router.push("/login"), 2000);
-    return () => clearTimeout(timer);
-  }, [phase, router]);
-
   const heroLines = useMemo(() => ["SONSHI", "GACHA"], []);
 
   const iconVariants: Variants = {
@@ -159,9 +153,9 @@ export function SplashGateway() {
                   <Image
                     src="/icon.png"
                     alt="SONSHI GACHA"
-                    width={72}
-                    height={72}
-                    className="h-16 w-16 rounded-2xl object-cover"
+                    width={112}
+                    height={112}
+                    className="h-24 w-24 rounded-2xl object-cover"
                   />
                 </div>
                 <p className="text-xs uppercase tracking-[0.5em] text-neon-blue">TOP</p>
