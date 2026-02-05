@@ -28,6 +28,7 @@ export default async function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="relative min-h-screen bg-hall-background text-white">
       <div className="pointer-events-none absolute inset-0 opacity-40">
+        <div className="absolute inset-0 bg-hall-grid opacity-45" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#ff2d95_0%,transparent_45%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,#30f0ff_0%,transparent_55%)]" />
       </div>

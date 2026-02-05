@@ -13,7 +13,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="mt-4 w-full rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow py-3 font-display text-sm tracking-[0.35em] text-black disabled:opacity-60"
+      className="mt-4 w-full rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow py-3 font-display text-sm tracking-[0.35em] text-black shadow-neon disabled:opacity-60"
     >
       {pending ? "SIGNING IN" : "SIGN IN"}
     </button>

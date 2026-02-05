@@ -86,7 +86,7 @@ export function TicketBalanceCarousel({ tickets }: TicketBalanceCarouselProps) {
             <div
               key={ticket.code}
               className={cn(
-                "relative min-w-[160px] snap-start overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br px-4 py-4 shadow-panel-inset",
+                "slot-panel min-w-[160px] snap-start overflow-hidden px-4 py-4",
                 theme.gradient
               )}
             >

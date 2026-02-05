@@ -31,7 +31,7 @@ export function TabBar({ items }: TabBarProps) {
 
   return (
     <nav className="fixed inset-x-0 bottom-4 z-50 flex justify-center">
-      <div className="glass-panel flex w-[min(480px,calc(100%-2rem))] items-center gap-3 rounded-full border border-white/15 bg-hall-panel/90 px-4 py-2 text-sm backdrop-blur-2xl">
+      <div className="neon-tabbar flex w-[min(480px,calc(100%-2rem))] items-center gap-3 rounded-full px-4 py-2 text-sm backdrop-blur-2xl">
         {items.map((item) => {
           const Icon = iconMap[item.icon];
           if (!Icon) return null;
@@ -41,9 +41,9 @@ export function TabBar({ items }: TabBarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[0.7rem] transition",
-                item.primary && "-mt-5 bg-gradient-to-r from-neon-pink to-neon-yellow text-black shadow-neon",
-                isActive && !item.primary && "text-neon-blue",
+                "tab-bar-item flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[0.7rem] transition",
+                item.primary && "tab-bar-primary -mt-5 shadow-neon",
+                isActive && !item.primary && "tab-bar-active",
                 !isActive && !item.primary && "text-zinc-400"
               )}
             >

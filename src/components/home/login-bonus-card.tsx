@@ -53,7 +53,7 @@ export function LoginBonusCard() {
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-hall-panel/80 to-hall-surface/80 p-6 shadow-panel-inset">
+    <div className="slot-panel p-6">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-yellow/20 text-neon-yellow">
           <Ticket className="h-5 w-5" />
@@ -78,7 +78,7 @@ export function LoginBonusCard() {
           type="button"
           onClick={handleClaim}
           disabled={claiming || state.status === "claimed"}
-          className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black disabled:opacity-60"
+          className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black shadow-neon disabled:opacity-60"
         >
           {state.status === "claimed" ? "受取済" : claiming ? "付与中..." : "受け取る"}
         </button>

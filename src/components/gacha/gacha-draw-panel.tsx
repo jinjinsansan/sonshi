@@ -72,7 +72,7 @@ export function GachaDrawPanel({ gachaId }: Props) {
           type="button"
           disabled={pending}
           onClick={() => runDraw(1)}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black shadow-neon disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "1回ガチャ"}
         </button>

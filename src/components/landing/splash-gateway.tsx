@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Phase = "splash" | "title";
 
@@ -20,6 +21,7 @@ export function SplashGateway() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-hall-background text-white">
       <div className="pointer-events-none absolute inset-0 opacity-50">
+        <div className="absolute inset-0 bg-hall-grid opacity-35" />
         <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-neon-pink/30 blur-[220px]" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-neon-blue/30 blur-[200px]" />
       </div>
@@ -35,14 +37,19 @@ export function SplashGateway() {
               className="flex flex-col items-center gap-6"
             >
               <motion.div
-                className="relative flex h-28 w-28 items-center justify-center rounded-full border border-white/20 bg-white/5 shadow-[0_0_60px_rgba(255,45,149,0.35)]"
+                className="neon-crest"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <span className="font-display text-[0.55rem] uppercase tracking-[0.6em] text-white/70">
-                  SONSHI
-                </span>
+                <Image
+                  src="/icon.png"
+                  alt="SONSHI GACHA"
+                  width={96}
+                  height={96}
+                  priority
+                  className="h-24 w-24 rounded-2xl object-cover"
+                />
               </motion.div>
               <motion.p
                 className="text-xs uppercase tracking-[0.6em] text-zinc-400"
@@ -63,7 +70,18 @@ export function SplashGateway() {
               className="flex w-full flex-col items-center gap-8 text-center"
             >
               <div className="space-y-5">
-                <p className="text-xs uppercase tracking-[0.6em] text-neon-yellow">Tap to Enter</p>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="neon-crest">
+                    <Image
+                      src="/icon.png"
+                      alt="SONSHI GACHA"
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 rounded-2xl object-cover"
+                    />
+                  </div>
+                  <p className="text-xs uppercase tracking-[0.6em] text-neon-yellow">Tap to Enter</p>
+                </div>
                 <div className="font-display text-4xl leading-tight">
                   {titleLines.map((line) => (
                     <motion.div

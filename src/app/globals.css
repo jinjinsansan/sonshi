@@ -2,11 +2,15 @@
 
 :root {
   color-scheme: dark;
-  --hall-bg: #05010d;
+  --hall-bg: #040008;
   --hall-panel: #130a28;
   --hall-surface: #1d0f3d;
-  --hall-grid-line: rgba(255, 255, 255, 0.04);
-  --hall-noise: rgba(255, 255, 255, 0.03);
+  --hall-grid-line: rgba(255, 255, 255, 0.05);
+  --hall-noise: rgba(255, 255, 255, 0.04);
+  --hall-neon-pink: rgba(255, 45, 149, 0.35);
+  --hall-neon-blue: rgba(48, 240, 255, 0.3);
+  --hall-neon-yellow: rgba(255, 246, 92, 0.28);
+  --hall-neon-purple: rgba(168, 85, 247, 0.25);
 }
 
 * {
@@ -18,9 +22,10 @@ body {
   margin: 0;
   background-color: var(--hall-bg);
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(255, 45, 149, 0.18), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(48, 240, 255, 0.18), transparent 55%),
-    linear-gradient(180deg, rgba(5, 1, 13, 0.9), rgba(5, 1, 13, 1));
+    radial-gradient(circle at 15% 15%, var(--hall-neon-pink), transparent 45%),
+    radial-gradient(circle at 85% 10%, var(--hall-neon-blue), transparent 50%),
+    radial-gradient(circle at 50% 100%, var(--hall-neon-purple), transparent 55%),
+    linear-gradient(180deg, rgba(5, 1, 13, 0.92), rgba(4, 0, 8, 1));
   color: #fdfdfd;
   font-family: var(--font-body, "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, sans-serif);
   line-height: 1.6;
@@ -42,16 +47,17 @@ body::before {
       var(--hall-grid-line) 0,
       var(--hall-grid-line) 1px,
       transparent 1px,
-      transparent 12px
+      transparent 10px
     ),
     repeating-linear-gradient(
       90deg,
       var(--hall-grid-line) 0,
       var(--hall-grid-line) 1px,
       transparent 1px,
-      transparent 12px
-    );
-  mask-image: radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 70%);
+      transparent 10px
+    ),
+    radial-gradient(circle at 50% 0%, var(--hall-neon-yellow), transparent 55%);
+  mask-image: radial-gradient(circle at top, rgba(255, 255, 255, 0.65), transparent 70%);
 }
 
 body::after {
@@ -60,18 +66,104 @@ body::after {
   opacity: 0.25;
 }
 
+.font-display {
+  text-shadow:
+    0 0 12px rgba(255, 45, 149, 0.45),
+    0 0 28px rgba(48, 240, 255, 0.35),
+    0 0 45px rgba(255, 246, 92, 0.2);
+}
+
 .glass-panel {
+  position: relative;
   border-radius: 1.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(135deg, rgba(19, 10, 40, 0.92), rgba(8, 3, 20, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, rgba(22, 12, 45, 0.94), rgba(8, 4, 20, 0.94));
   backdrop-filter: blur(24px);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 45, 149, 0.12),
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.12),
+    inset 0 0 20px rgba(48, 240, 255, 0.18);
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.12), transparent 45%);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.neon-crest {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 1.35rem;
+  background: linear-gradient(135deg, rgba(255, 45, 149, 0.4), rgba(48, 240, 255, 0.3));
+  box-shadow:
+    0 0 18px rgba(255, 45, 149, 0.5),
+    0 0 30px rgba(48, 240, 255, 0.35);
+}
+
+.neon-tabbar {
+  position: relative;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, rgba(20, 10, 40, 0.96), rgba(6, 2, 16, 0.95));
+  box-shadow:
+    0 10px 35px rgba(0, 0, 0, 0.65),
+    inset 0 0 20px rgba(48, 240, 255, 0.15);
+}
+
+.neon-tabbar::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 45, 149, 0.5), rgba(48, 240, 255, 0.45), rgba(255, 246, 92, 0.4));
+  filter: blur(8px);
+  z-index: -1;
+}
+
+.tab-bar-item {
+  position: relative;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 12px rgba(48, 240, 255, 0.2);
+}
+
+.tab-bar-item.tab-bar-active {
+  color: #30f0ff;
+  text-shadow: 0 0 15px rgba(48, 240, 255, 0.6);
+}
+
+.tab-bar-item.tab-bar-primary {
+  background: linear-gradient(135deg, #ff2d95, #fff65c);
+  color: #120a1a;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 0 16px rgba(255, 45, 149, 0.55),
+    0 0 30px rgba(255, 246, 92, 0.45);
+}
+
+.slot-panel {
+  position: relative;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: rgba(12, 6, 26, 0.9);
+  box-shadow:
+    inset 0 1px 3px rgba(255, 255, 255, 0.14),
+    inset 0 0 18px rgba(48, 240, 255, 0.18),
+    0 18px 40px rgba(0, 0, 0, 0.6);
 }
 
 .neon-divider {
   position: relative;
   height: 1px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 244, 92, 0.9), transparent);
-  box-shadow: 0 0 20px rgba(255, 244, 92, 0.45);
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 92, 0.95), transparent);
+  box-shadow: 0 0 25px rgba(255, 244, 92, 0.6);
 }

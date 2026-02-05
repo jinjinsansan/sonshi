@@ -28,8 +28,8 @@ const config: Config = {
           "radial-gradient(circle at top, rgba(255,45,149,0.25), transparent 55%), linear-gradient(120deg, rgba(48,240,255,0.18), rgba(5,1,13,0) 60%), repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 12px)",
       },
       boxShadow: {
-        neon: "0 0 25px rgba(255,45,149,0.45), 0 0 40px rgba(48,240,255,0.4)",
-        "panel-inset": "inset 0 1px 6px rgba(255,255,255,0.08)",
+        neon: "0 0 18px rgba(255,45,149,0.55), 0 0 36px rgba(48,240,255,0.45), 0 0 60px rgba(255,246,92,0.35)",
+        "panel-inset": "inset 0 1px 6px rgba(255,255,255,0.12), inset 0 0 18px rgba(48,240,255,0.18)",
       },
       animation: {
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",

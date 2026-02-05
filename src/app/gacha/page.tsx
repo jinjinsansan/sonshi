@@ -48,7 +48,7 @@ export default async function GachaPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href={`/gacha/${item.id}`}
-                className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black"
+                className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
               >
                 1回ガチャ
               </Link>
