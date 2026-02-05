@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendEmailChangeVerificationEmail, sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth/emails";
@@ -23,17 +23,7 @@ import {
 import { publicEnv } from "@/lib/env";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
-async function getActionBaseUrl() {
-  try {
-    const hdrs = await headers();
-    const proto = hdrs.get("x-forwarded-proto") ?? "https";
-    const host = hdrs.get("host");
-    if (host) {
-      return `${proto}://${host}`;
-    }
-  } catch {
-    // no request context (shouldn't happen in server actions)
-  }
+function getActionBaseUrl() {
   return publicEnv.NEXT_PUBLIC_SITE_URL;
 }
 
@@ -175,7 +165,7 @@ export async function signUpAction(
   }
 
   const token = await createEmailVerificationToken(user.id);
-  const baseUrl = await getActionBaseUrl();
+  const baseUrl = getActionBaseUrl();
   const verifyUrl = new URL("/auth/verify", baseUrl);
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
@@ -205,7 +195,7 @@ export async function requestPasswordResetAction(
 
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const baseUrl = await getActionBaseUrl();
+    const baseUrl = getActionBaseUrl();
     const resetUrl = new URL("/reset/confirm", baseUrl);
     resetUrl.searchParams.set("token", token);
     await sendPasswordResetEmail(email, resetUrl.toString());
@@ -288,7 +278,7 @@ export async function requestEmailChangeAction(
   }
 
   const token = await createEmailChangeToken(user.id, newEmail);
-  const baseUrl = await getActionBaseUrl();
+  const baseUrl = getActionBaseUrl();
   const changeUrl = new URL("/auth/email-change", baseUrl);
   changeUrl.searchParams.set("token", token);
   await sendEmailChangeVerificationEmail(newEmail, changeUrl.toString());
@@ -335,7 +325,7 @@ export async function resendVerificationAction(
   }
 
   const token = await createEmailVerificationToken(user.id);
-  const baseUrl = await getActionBaseUrl();
+  const baseUrl = getActionBaseUrl();
   const verifyUrl = new URL("/auth/verify", baseUrl);
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
