@@ -273,6 +273,309 @@ export type Database = {
         };
         Relationships: [];
       };
+      gacha_results: {
+        Row: {
+          id: string;
+          user_id: string;
+          gacha_id: string | null;
+          card_id: string | null;
+          obtained_via: string;
+          session_id: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          gacha_id?: string | null;
+          card_id?: string | null;
+          obtained_via: string;
+          session_id?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          gacha_id?: string | null;
+          card_id?: string | null;
+          obtained_via?: string;
+          session_id?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gacha_results_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "gacha_results_gacha_id_fkey";
+            columns: ["gacha_id"];
+            isOneToOne: false;
+            referencedRelation: "gachas";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "gacha_results_card_id_fkey";
+            columns: ["card_id"];
+            isOneToOne: false;
+            referencedRelation: "cards";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "gacha_results_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "multi_gacha_sessions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      cards: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          image_url: string;
+          rarity: string;
+          max_supply: number;
+          current_supply: number | null;
+          is_active: boolean | null;
+          person_name: string | null;
+          card_style: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          image_url: string;
+          rarity: string;
+          max_supply: number;
+          current_supply?: number | null;
+          is_active?: boolean | null;
+          person_name?: string | null;
+          card_style?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          image_url?: string;
+          rarity?: string;
+          max_supply?: number;
+          current_supply?: number | null;
+          is_active?: boolean | null;
+          person_name?: string | null;
+          card_style?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      card_inventory: {
+        Row: {
+          id: string;
+          card_id: string;
+          serial_number: number;
+          owner_id: string;
+          obtained_at: string | null;
+          obtained_via: string;
+          gacha_result_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          card_id: string;
+          serial_number: number;
+          owner_id: string;
+          obtained_at?: string | null;
+          obtained_via: string;
+          gacha_result_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          card_id?: string;
+          serial_number?: number;
+          owner_id?: string;
+          obtained_at?: string | null;
+          obtained_via?: string;
+          gacha_result_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "card_inventory_card_id_fkey";
+            columns: ["card_id"];
+            isOneToOne: false;
+            referencedRelation: "cards";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "card_inventory_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      gacha_probability: {
+        Row: {
+          id: string;
+          rarity: string;
+          probability: number;
+          rtp_weight: number | null;
+          pity_threshold: number | null;
+          is_active: boolean | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          rarity: string;
+          probability: number;
+          rtp_weight?: number | null;
+          pity_threshold?: number | null;
+          is_active?: boolean | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          rarity?: string;
+          probability?: number;
+          rtp_weight?: number | null;
+          pity_threshold?: number | null;
+          is_active?: boolean | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      line_follows: {
+        Row: {
+          id: string;
+          user_id: string;
+          line_user_id: string | null;
+          ticket_granted: boolean | null;
+          followed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          line_user_id?: string | null;
+          ticket_granted?: boolean | null;
+          followed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          line_user_id?: string | null;
+          ticket_granted?: boolean | null;
+          followed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "line_follows_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      multi_gacha_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          session_type: string;
+          total_pulls: number;
+          current_pull: number | null;
+          scenario_path: Json | null;
+          status: string | null;
+          results: Json | null;
+          created_at: string | null;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          session_type: string;
+          total_pulls: number;
+          current_pull?: number | null;
+          scenario_path?: Json | null;
+          status?: string | null;
+          results?: Json | null;
+          created_at?: string | null;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          session_type?: string;
+          total_pulls?: number;
+          current_pull?: number | null;
+          scenario_path?: Json | null;
+          status?: string | null;
+          results?: Json | null;
+          created_at?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "multi_gacha_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      referrals: {
+        Row: {
+          id: string;
+          referrer_id: string | null;
+          referred_id: string | null;
+          referral_code: string;
+          status: string | null;
+          ticket_granted: boolean | null;
+          created_at: string | null;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          referrer_id?: string | null;
+          referred_id?: string | null;
+          referral_code: string;
+          status?: string | null;
+          ticket_granted?: boolean | null;
+          created_at?: string | null;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          referrer_id?: string | null;
+          referred_id?: string | null;
+          referral_code?: string;
+          status?: string | null;
+          ticket_granted?: boolean | null;
+          created_at?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referrer_id_fkey";
+            columns: ["referrer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "referrals_referred_id_fkey";
+            columns: ["referred_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       login_bonus_claims: {
         Row: {
           id: string;

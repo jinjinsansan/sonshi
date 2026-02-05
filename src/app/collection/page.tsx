@@ -1,8 +1,14 @@
-export default function CollectionPlaceholder() {
+import { CollectionList } from "@/components/collection/collection-list";
+
+export default function CollectionPage() {
   return (
-    <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-10 text-center shadow-panel-inset">
-      <p className="font-display text-2xl text-white">コレクション準備中</p>
-      <p className="mt-2 text-sm text-zinc-400">cards / card_inventory テーブルを実装後にUMAの図鑑UIを移植します。</p>
-    </div>
+    <section className="space-y-6">
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.5em] text-neon-purple">Collection</p>
+        <h1 className="font-display text-3xl text-white">カードコレクション</h1>
+        <p className="text-sm text-zinc-300">獲得したカードとシリアルを確認できます。</p>
+      </div>
+      <CollectionList />
+    </section>
   );
 }
