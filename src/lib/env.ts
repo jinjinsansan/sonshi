@@ -6,13 +6,18 @@ const normalizeUrl = (value?: string) => {
   return `https://${value}`;
 };
 
-const vercelUrl = normalizeUrl(process.env.NEXT_PUBLIC_VERCEL_URL ?? process.env.VERCEL_URL);
+const siteUrl = normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL);
+if (!siteUrl) {
+  throw new Error(
+    "❌ NEXT_PUBLIC_SITE_URL must be set to https://www.sonshigacha.com in Vercel environment variables. " +
+    "This is required for email authentication links."
+  );
+}
+
 const resolvedAppUrl =
   normalizeUrl(process.env.NEXT_PUBLIC_APP_URL)
-  ?? normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL)
-  ?? vercelUrl
+  ?? siteUrl
   ?? "http://localhost:3000";
-const resolvedSiteUrl = normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL) ?? vercelUrl ?? resolvedAppUrl;
 
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -46,7 +51,7 @@ export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_APP_URL: resolvedAppUrl,
-  NEXT_PUBLIC_SITE_URL: resolvedSiteUrl,
+  NEXT_PUBLIC_SITE_URL: siteUrl,
   NEXT_PUBLIC_SITE_NAME: process.env.NEXT_PUBLIC_SITE_NAME,
   NEXT_PUBLIC_ONE_LAT_BASE_URL: process.env.NEXT_PUBLIC_ONE_LAT_BASE_URL,
   NEXT_PUBLIC_R2_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL,
