@@ -108,8 +108,8 @@ export async function attachSessionCookie(
   return response;
 }
 
-export function setServerSessionCookie(token: string, expiresAt: Date) {
-  const store = cookies();
+export async function setServerSessionCookie(token: string, expiresAt: Date) {
+  const store = await cookies();
   store.set({
     name: SESSION_COOKIE_NAME,
     value: token,
@@ -121,8 +121,8 @@ export function setServerSessionCookie(token: string, expiresAt: Date) {
   });
 }
 
-export function clearServerSessionCookie() {
-  const store = cookies();
+export async function clearServerSessionCookie() {
+  const store = await cookies();
   store.set({
     name: SESSION_COOKIE_NAME,
     value: "",

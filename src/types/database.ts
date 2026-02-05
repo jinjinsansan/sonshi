@@ -143,6 +143,170 @@ export type Database = {
         };
         Relationships: [];
       };
+      app_users: {
+        Row: {
+          id: string;
+          email: string;
+          password_hash: string;
+          email_verified: boolean;
+          created_at: string;
+          updated_at: string;
+          last_login_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          password_hash: string;
+          email_verified?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          last_login_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          password_hash?: string;
+          email_verified?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          last_login_at?: string | null;
+        };
+        Relationships: [];
+      };
+      auth_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          session_token_hash: string;
+          expires_at: string;
+          created_at: string;
+          last_seen_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          session_token_hash: string;
+          expires_at: string;
+          created_at?: string;
+          last_seen_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          session_token_hash?: string;
+          expires_at?: string;
+          created_at?: string;
+          last_seen_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "auth_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "app_users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      auth_email_verifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token_hash?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "auth_email_verifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "app_users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      auth_password_resets: {
+        Row: {
+          id: string;
+          user_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token_hash: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token_hash?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "auth_password_resets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "app_users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      auth_email_changes: {
+        Row: {
+          id: string;
+          user_id: string;
+          new_email: string;
+          token_hash: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          new_email: string;
+          token_hash: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          new_email?: string;
+          token_hash?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "auth_email_changes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "app_users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       user_collections: {
         Row: {
           id: string;
