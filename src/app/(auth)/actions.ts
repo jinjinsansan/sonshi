@@ -42,6 +42,11 @@ export type AuthActionState = {
   message?: string;
 };
 
+export type ResendVerificationState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+};
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -79,6 +84,10 @@ const passwordUpdateSchema = z
   });
 
 const emailChangeSchema = z.object({
+  email: z.string().email(),
+});
+
+const resendVerificationSchema = z.object({
   email: z.string().email(),
 });
 
@@ -285,6 +294,53 @@ export async function requestEmailChangeAction(
   await sendEmailChangeVerificationEmail(newEmail, changeUrl.toString());
 
   return { status: "idle" };
+}
+
+export async function resendVerificationAction(
+  _: ResendVerificationState,
+  formData: FormData
+): Promise<ResendVerificationState> {
+  const parsed = resendVerificationSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    return { status: "error", message: "メールアドレスを確認してください" };
+  }
+
+  const supabase = getSupabaseServiceClient();
+  const email = parsed.data.email.toLowerCase();
+  const { data: user, error } = await supabase
+    .from("app_users")
+    .select("id, email_verified")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to lookup app_user for verification resend", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    return { status: "error", message: "送信に失敗しました。時間をおいて再試行してください" };
+  }
+
+  if (!user) {
+    return { status: "success", message: "登録済みメール宛に認証メールを送信しました" };
+  }
+
+  if (user.email_verified) {
+    return { status: "success", message: "既に認証済みです。ログインしてください" };
+  }
+
+  const token = await createEmailVerificationToken(user.id);
+  const baseUrl = await getActionBaseUrl();
+  const verifyUrl = new URL("/auth/verify", baseUrl);
+  verifyUrl.searchParams.set("token", token);
+  await sendSignupVerificationEmail(email, verifyUrl.toString());
+
+  return { status: "success", message: "認証メールを再送しました。受信箱をご確認ください" };
 }
 
 export async function confirmEmailChangeAction(token: string) {
