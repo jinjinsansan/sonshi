@@ -140,6 +140,14 @@ export async function signUpAction(
     .single();
 
   if (error || !user) {
+    if (error) {
+      console.error("Failed to register app_user", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+    }
     return { status: "error", message: "登録に失敗しました" };
   }
 
