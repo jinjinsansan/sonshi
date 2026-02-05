@@ -7,6 +7,11 @@ const menuItems = [
     href: "/mypage/invite",
   },
   {
+    title: "LINE特典",
+    description: "LINE公式追加でフリーチケットを受け取る",
+    href: "/mypage/line",
+  },
+  {
     title: "チケット管理",
     description: "保有チケットの残数や履歴を確認",
     href: "/mypage/tickets",
