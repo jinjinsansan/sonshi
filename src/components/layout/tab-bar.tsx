@@ -42,12 +42,18 @@ export function TabBar({ items }: TabBarProps) {
               href={item.href}
               className={cn(
                 "tab-bar-item flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[0.7rem] transition",
-                item.primary && "tab-bar-primary -mt-5 shadow-neon",
+                item.primary && "tab-bar-primary shadow-neon",
                 isActive && !item.primary && "tab-bar-active",
                 !isActive && !item.primary && "text-zinc-400"
               )}
             >
-              <Icon className={cn("h-5 w-5", item.primary ? "text-black" : isActive ? "text-neon-blue" : "text-zinc-500")} />
+              <Icon
+                className={cn(
+                  "h-5 w-5",
+                  item.primary ? "text-black" : isActive ? "text-neon-blue" : "text-white/70"
+                )}
+                strokeWidth={item.primary ? 2.4 : isActive ? 2.3 : 2.6}
+              />
               <span className={cn(item.primary && "font-display text-[0.55rem] uppercase tracking-[0.3em]")}>{
                 item.label
               }</span>
