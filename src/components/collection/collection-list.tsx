@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 type CollectionItem = {
   card_id: string;
@@ -207,9 +208,10 @@ export function CollectionList() {
             const card = item.cards;
             if (!card) return null;
             return (
-              <div
+              <Link
                 key={`${item.card_id}-${item.serial_number}`}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-hall-panel/80 p-3 shadow-panel-inset"
+                href={`/collection/${item.card_id}`}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-hall-panel/80 p-3 shadow-panel-inset transition hover:border-neon-blue"
               >
                 {card.image_url ? (
                   <Image
@@ -243,7 +245,7 @@ export function CollectionList() {
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             );
           })
         )}

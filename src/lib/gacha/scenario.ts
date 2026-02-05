@@ -1,6 +1,6 @@
 import { publicEnv } from "@/lib/env";
-
-export type Rarity = "N" | "R" | "SR" | "SSR" | "UR";
+import type { Rarity } from "@/lib/gacha/rarity";
+export type { Rarity } from "@/lib/gacha/rarity";
 export type Phase = "intro" | "mid" | "buildup" | "finale";
 export type HeatLevel = "normal" | "hot" | "super" | "jackpot";
 

@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { buildScenario, type Rarity } from "@/lib/gacha/scenario";
-import { pickWeighted } from "@/lib/utils/api";
+import { buildRarityWeights, pickRarity } from "@/lib/gacha/pool";
+import { isRarityAtOrBelow } from "@/lib/gacha/rarity";
 import { canonicalizeGachaId, gachaIdMatches } from "@/lib/utils/gacha";
 import type { Database } from "@/types/database";
 
@@ -116,17 +117,34 @@ export async function POST(request: NextRequest) {
 
   const { data: probabilities, error: probabilityError } = await serviceSupabase
     .from("gacha_probability")
-    .select("rarity, probability")
+    .select("rarity, probability, rtp_weight, pity_threshold")
     .eq("is_active", true);
 
   if (probabilityError) {
     return applyCookies(NextResponse.json({ error: probabilityError.message }, { status: 500 }));
   }
 
-  const rarityWeights = (probabilities ?? []).map((item) => ({
-    item: item.rarity as Rarity,
-    weight: Number(item.probability) || 0,
-  }));
+  const rarityWeights = buildRarityWeights(probabilities ?? []);
+
+  const pityThreshold = (probabilities ?? []).find((row) => row.rarity === "SR")?.pity_threshold;
+  let pityCounter = 0;
+  if (pityThreshold && pityThreshold > 0) {
+    const { data: history } = await serviceSupabase
+      .from("gacha_results")
+      .select("id, cards(rarity)")
+      .eq("user_id", user.id)
+      .eq("gacha_id", gacha.id)
+      .order("created_at", { ascending: false })
+      .limit(pityThreshold);
+
+    (history ?? []).every((entry) => {
+      if (isRarityAtOrBelow(entry.cards?.rarity, "SR")) {
+        pityCounter += 1;
+        return true;
+      }
+      return false;
+    });
+  }
 
   const cardsByRarity = new Map<string, CardRow[]>();
   const supplyMap = new Map<string, number>();
@@ -155,10 +173,19 @@ export async function POST(request: NextRequest) {
 
   const results: DrawResult[] = [];
   for (let i = 0; i < totalPulls; i += 1) {
-    const desiredRarity = rarityWeights.length > 0 ? pickWeighted(rarityWeights) : null;
+    const shouldGuarantee = !!pityThreshold && pityCounter >= pityThreshold;
+    const minRarity = shouldGuarantee ? "SR" : null;
+    const desiredRarity = pickRarity(rarityWeights, minRarity);
     const picked = pickEligibleCard(desiredRarity) ?? pickEligibleCard();
     if (!picked) {
       return applyCookies(NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 }));
+    }
+    if (shouldGuarantee) {
+      pityCounter = 0;
+    } else if (isRarityAtOrBelow(picked.rarity, "SR")) {
+      pityCounter += 1;
+    } else {
+      pityCounter = 0;
     }
     const used = (usageMap.get(picked.id) ?? 0) + 1;
     usageMap.set(picked.id, used);
