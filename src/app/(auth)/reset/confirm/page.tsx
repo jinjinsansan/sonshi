@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { resetPasswordAction, type AuthActionState } from "../../actions";
@@ -20,7 +21,7 @@ function SubmitButton() {
   );
 }
 
-export default function ResetConfirmPage() {
+function ResetConfirmContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [state, action] = useFormState(resetPasswordAction, initialState);
@@ -81,5 +82,13 @@ export default function ResetConfirmPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ResetConfirmPage() {
+  return (
+    <Suspense fallback={<div className="text-white">Loading...</div>}>
+      <ResetConfirmContent />
+    </Suspense>
   );
 }
