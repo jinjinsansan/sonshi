@@ -115,7 +115,7 @@ export default async function GachaPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">All Lineup</p>
-            <h3 className="font-display text-2xl text-white">全ガチャ一覧</h3>
+            <h3 className="font-display text-2xl text白">全ガチャ一覧</h3>
           </div>
           <Link href="/collection" className="text-xs uppercase tracking-[0.35em] text-neon-blue">
             図鑑で確認
