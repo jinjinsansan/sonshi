@@ -143,42 +143,44 @@ export function SplashGateway() {
           </motion.p>
         ) : (
           <motion.div
-            className="mt-10 w-full space-y-6 text-center"
+            className="mt-2 w-full max-w-sm space-y-8 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-col items-center gap-4">
                 <div className="neon-crest">
                   <Image
                     src="/icon.png"
                     alt="SONSHI GACHA"
-                    width={112}
-                    height={112}
-                    className="h-24 w-24 rounded-2xl object-cover"
+                    width={128}
+                    height={128}
+                    className="h-28 w-28 rounded-3xl object-cover shadow-[0_0_35px_rgba(255,255,255,0.25)]"
                   />
                 </div>
-                <p className="text-xs uppercase tracking-[0.5em] text-neon-blue">TOP</p>
+                <p className="text-[11px] uppercase tracking-[0.55em] text-neon-blue/80">TAP TO ENTER</p>
               </div>
-              <div className="font-display text-5xl leading-[1.1] text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.25)]">
-                {heroLines.map((line) => (
-                  <div key={line}>{line}</div>
-                ))}
+              <div className="space-y-3">
+                <div className="font-display text-6xl leading-tight text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.35)]">
+                  {heroLines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+                <p className="text-sm text-white/80">尊師と仲間たちのガチャカードをコレクションしよう</p>
               </div>
-              <p className="text-sm text-zinc-300">尊師と仲間たちのガチャカードをコレクションしよう</p>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="h-14 w-full rounded-full bg-[#ffe347] font-display text-sm uppercase tracking-[0.35em] text-white shadow-[0_0_22px_rgba(255,255,0,0.45)]"
+                className="h-14 w-full rounded-full bg-[#ffe347] font-display text-sm uppercase tracking-[0.4em] text-white shadow-[0_0_28px_rgba(255,255,0,0.45)]"
               >
                 タップして入場
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/register")}
-                className="h-12 w-full rounded-full border border-white/15 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+                className="h-12 w-full rounded-full border border-white/20 text-[11px] uppercase tracking-[0.45em] text-white/80 transition hover:border-neon-blue hover:text-white"
               >
                 新規登録はこちら
               </button>
