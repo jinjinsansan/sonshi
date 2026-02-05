@@ -114,7 +114,7 @@ export async function signInAction(
   await setServerSessionCookie(token, expiresAt);
   await supabase.from("app_users").update({ last_login_at: new Date().toISOString() }).eq("id", user.id);
 
-  redirect("/gacha");
+  redirect("/home");
 }
 
 export async function signUpAction(

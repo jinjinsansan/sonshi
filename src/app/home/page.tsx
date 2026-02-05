@@ -31,35 +31,49 @@ export default async function SonshiHome() {
 
   return (
     <section className="mx-auto w-full max-w-md space-y-10">
-      <div className="glass-panel space-y-3 px-5 py-6">
-        <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-neon-yellow">
-          <span>SONSHI HALL</span>
-          <Link href="/mypage" className="text-neon-blue">
+      <div className="space-y-3 rounded-3xl border border-white/10 bg-black/30 px-6 py-7 shadow-[0_20px_45px_rgba(0,0,0,0.45)]">
+        <p className="text-xs uppercase tracking-[0.5em] text-neon-yellow">SONSHI HALL</p>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h1 className="font-display text-3xl text-white">ネオンホールダッシュボード</h1>
+            <p className="mt-2 text-sm text-zinc-300">
+              チケット残高と開催中のガチャ熱をまとめて確認。ホールの最新状態をここで把握できます。
+            </p>
+          </div>
+          <Link
+            href="/mypage"
+            className="rounded-full border border-white/20 px-4 py-2 text-[10px] uppercase tracking-[0.4em] text-white/80 transition hover:border-neon-blue hover:text-white"
+          >
             MYPAGE
           </Link>
         </div>
-        <h1 className="font-display text-3xl text-white">ホールダッシュボード</h1>
-        <p className="text-sm text-zinc-300">
-          パチスロホールの熱量を感じながら、チケット残高と開催中のガチャを確認できます。
-        </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-zinc-400">
-          <span>Tickets</span>
-          <Link href="/mypage/tickets" className="text-neon-blue">
+      <section className="space-y-4">
+        <div className="flex items-center justify-between text-xs text-zinc-400">
+          <div className="space-y-1">
+            <p className="uppercase tracking-[0.4em] text-neon-yellow">Tickets</p>
+            <p>本日のチケット残高</p>
+          </div>
+          <Link href="/mypage/tickets" className="text-xs uppercase tracking-[0.35em] text-neon-blue">
             履歴を見る
           </Link>
         </div>
         <TicketBalanceCarousel tickets={tickets} />
-      </div>
+      </section>
 
-      <LoginBonusCard />
+      <section className="space-y-3">
+        <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Login Bonus</p>
+        <LoginBonusCard />
+      </section>
 
-      <div className="space-y-4">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl text-white">開催中のガチャ</h2>
-          <Link href="/gacha" className="text-xs uppercase tracking-[0.35em] text-neon-yellow">
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Gacha Lineup</p>
+            <h2 className="font-display text-2xl text-white">開催中のガチャ</h2>
+          </div>
+          <Link href="/gacha" className="text-xs uppercase tracking-[0.35em] text-neon-blue">
             もっと見る
           </Link>
         </div>
@@ -81,7 +95,7 @@ export default async function SonshiHome() {
                   {tier.description || "ネオンホールの最新ラインナップです。"}
                 </p>
                 {tier.featuredNote && (
-                  <p className="mt-2 text-xs uppercase tracking-[0.4em] text-neon-yellow">
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.35em] text-yellow-200">
                     {tier.featuredNote}
                   </p>
                 )}
@@ -98,20 +112,26 @@ export default async function SonshiHome() {
                   </Link>
                   <Link
                     href="/gacha/multi"
-                    className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+                    className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
                   >
-                    連続ガチャ
+                    10連ガチャ
+                  </Link>
+                  <Link
+                    href={`/gacha/${slug}#rates`}
+                    className="inline-flex items-center justify-center rounded-full border border-transparent px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 underline-offset-4 hover:text-white hover:underline"
+                  >
+                    提供割合
                   </Link>
                 </div>
               </article>
             );
           })}
         </div>
-      </div>
+      </section>
 
       <Link
         href="/mypage/tickets"
-        className="flex h-14 items-center justify-center rounded-full border border-white/15 bg-hall-panel/80 text-sm uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+        className="flex h-14 items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow text-sm uppercase tracking-[0.35em] text-black shadow-neon transition hover:opacity-90"
       >
         チケット購入へ
       </Link>
