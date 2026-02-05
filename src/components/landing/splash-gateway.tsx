@@ -93,44 +93,46 @@ export function SplashGateway() {
         <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-neon-pink/30 blur-[220px]" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-neon-blue/30 blur-[200px]" />
       </div>
-      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-12">
-        <div className="relative flex h-64 w-64 items-center justify-center">
-          {/* SONSHI Image */}
-          <motion.div
-            className="absolute"
-            initial="offscreen"
-            animate={getSonshiAnimation()}
-            variants={sonshiVariants}
-          >
-            <motion.div animate={sonshiSpinControls} className="origin-center">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-10">
+        {phase !== "complete" && (
+          <div className="relative flex h-64 w-64 items-center justify-center">
+            {/* SONSHI Image */}
+            <motion.div
+              className="absolute"
+              initial="offscreen"
+              animate={getSonshiAnimation()}
+              variants={sonshiVariants}
+            >
+              <motion.div animate={sonshiSpinControls} className="origin-center">
+                <Image
+                  src="/sonshi.jpg"
+                  alt="SONSHI"
+                  width={256}
+                  height={256}
+                  priority
+                  className="h-64 w-64 rounded-3xl object-cover shadow-2xl"
+                />
+              </motion.div>
+            </motion.div>
+
+            {/* Icon Image */}
+            <motion.div
+              className="absolute z-10"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={getIconAnimation()}
+              variants={iconVariants}
+            >
               <Image
-                src="/sonshi.jpg"
-                alt="SONSHI"
-                width={256}
-                height={256}
+                src="/icon-large.png"
+                alt="Icon"
+                width={200}
+                height={200}
                 priority
-                className="h-64 w-64 rounded-3xl object-cover shadow-2xl"
+                className="h-48 w-48 rounded-2xl object-cover shadow-2xl neon-crest"
               />
             </motion.div>
-          </motion.div>
-
-          {/* Icon Image */}
-          <motion.div
-            className="absolute z-10"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={getIconAnimation()}
-            variants={iconVariants}
-          >
-            <Image
-              src="/icon-large.png"
-              alt="Icon"
-              width={200}
-              height={200}
-              priority
-              className="h-48 w-48 rounded-2xl object-cover shadow-2xl neon-crest"
-            />
-          </motion.div>
-        </div>
+          </div>
+        )}
 
         {/* Loading Text / Hero */}
         {phase !== "complete" ? (
@@ -143,7 +145,7 @@ export function SplashGateway() {
           </motion.p>
         ) : (
           <motion.div
-            className="mt-2 w-full max-w-sm space-y-8 text-center"
+            className="mt-0 w-full max-w-sm space-y-8 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
