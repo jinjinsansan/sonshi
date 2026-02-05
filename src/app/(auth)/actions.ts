@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendEmailChangeVerificationEmail, sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth/emails";
@@ -22,6 +22,20 @@ import {
 } from "@/lib/auth/session";
 import { publicEnv } from "@/lib/env";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
+
+function getActionBaseUrl() {
+  try {
+    const hdrs = headers();
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const host = hdrs.get("host");
+    if (host) {
+      return `${proto}://${host}`;
+    }
+  } catch {
+    // no request context (shouldn't happen in server actions)
+  }
+  return publicEnv.NEXT_PUBLIC_SITE_URL;
+}
 
 export type AuthActionState = {
   status: "idle" | "error";
@@ -152,7 +166,7 @@ export async function signUpAction(
   }
 
   const token = await createEmailVerificationToken(user.id);
-  const verifyUrl = new URL("/auth/verify", publicEnv.NEXT_PUBLIC_SITE_URL);
+  const verifyUrl = new URL("/auth/verify", getActionBaseUrl());
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
 
@@ -181,7 +195,7 @@ export async function requestPasswordResetAction(
 
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const resetUrl = new URL("/reset/confirm", publicEnv.NEXT_PUBLIC_SITE_URL);
+    const resetUrl = new URL("/reset/confirm", getActionBaseUrl());
     resetUrl.searchParams.set("token", token);
     await sendPasswordResetEmail(email, resetUrl.toString());
   }
@@ -263,7 +277,7 @@ export async function requestEmailChangeAction(
   }
 
   const token = await createEmailChangeToken(user.id, newEmail);
-  const changeUrl = new URL("/auth/email-change", publicEnv.NEXT_PUBLIC_SITE_URL);
+  const changeUrl = new URL("/auth/email-change", getActionBaseUrl());
   changeUrl.searchParams.set("token", token);
   await sendEmailChangeVerificationEmail(newEmail, changeUrl.toString());
 
