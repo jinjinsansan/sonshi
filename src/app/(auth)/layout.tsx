@@ -25,7 +25,7 @@ export default function AuthLayout({
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">SONSHI GACHA</p>
-            <p className="text-sm text-zinc-400">パチスロホールへようこそ</p>
+            <p className="text-sm text-zinc-400">尊師ガチャへようこそ</p>
           </div>
         </div>
         {children}
