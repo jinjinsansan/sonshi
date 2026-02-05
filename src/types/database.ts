@@ -449,6 +449,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      gacha_probability_history: {
+        Row: {
+          id: string;
+          admin_user_id: string | null;
+          admin_email: string | null;
+          snapshot: Json;
+          total_probability: number | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id?: string | null;
+          admin_email?: string | null;
+          snapshot: Json;
+          total_probability?: number | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          admin_user_id?: string | null;
+          admin_email?: string | null;
+          snapshot?: Json;
+          total_probability?: number | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gacha_probability_history_admin_user_id_fkey";
+            columns: ["admin_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       line_follows: {
         Row: {
           id: string;

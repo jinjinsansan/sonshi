@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -58,6 +58,8 @@ export function MultiGachaSession({ sessionId }: Props) {
   const [currentScenario, setCurrentScenario] = useState<ScenarioStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const prefetchCache = useRef(new Set<string>());
+  const preconnectCache = useRef(new Set<string>());
 
   useEffect(() => {
     let mounted = true;
@@ -88,6 +90,43 @@ export function MultiGachaSession({ sessionId }: Props) {
   const totalPulls = session?.totalPulls ?? 0;
   const currentPull = session?.currentPull ?? 0;
   const isCompleted = session?.status === "completed" || currentPull >= totalPulls;
+
+  useEffect(() => {
+    if (!session?.scenario || session.scenario.length === 0) return;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (connection?.saveData) return;
+
+    const currentIndex = Math.max(0, currentPull - 1);
+    const endIndex = Math.min(session.scenario.length, currentIndex + 3);
+
+    session.scenario.slice(currentIndex, endIndex).forEach((step) => {
+      if (!step.videoUrl) return;
+      if (!prefetchCache.current.has(step.videoUrl)) {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "video";
+        link.href = step.videoUrl;
+        link.type = "video/mp4";
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
+        prefetchCache.current.add(step.videoUrl);
+      }
+
+      try {
+        const origin = new URL(step.videoUrl).origin;
+        if (!preconnectCache.current.has(origin)) {
+          const link = document.createElement("link");
+          link.rel = "preconnect";
+          link.href = origin;
+          link.crossOrigin = "anonymous";
+          document.head.appendChild(link);
+          preconnectCache.current.add(origin);
+        }
+      } catch {
+        // ignore invalid URLs
+      }
+    });
+  }, [currentPull, session?.scenario]);
 
   const progressDots = useMemo(() => {
     return Array.from({ length: totalPulls }).map((_, index) => {
@@ -160,6 +199,7 @@ export function MultiGachaSession({ sessionId }: Props) {
             <video
               key={currentScenario.videoUrl}
               src={currentScenario.videoUrl}
+              preload="auto"
               controls
               playsInline
               className="h-56 w-full rounded-xl object-cover"

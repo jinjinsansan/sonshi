@@ -84,15 +84,32 @@ async function deleteCard(formData: FormData) {
   revalidatePath("/admin/cards");
 }
 
-export default async function AdminCardsPage() {
+type AdminCardsPageProps = {
+  searchParams: Promise<{ q?: string; rarity?: string }>;
+};
+
+export default async function AdminCardsPage({ searchParams }: AdminCardsPageProps) {
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
+  const { q, rarity } = await searchParams;
+  const query = q?.trim() ?? "";
+  const selectedRarity = RARITIES.includes(rarity ?? "") ? (rarity as string) : "";
 
-  const { data: cards } = await svc
+  let cardsQuery = svc
     .from("cards")
     .select("id, name, rarity, max_supply, current_supply, image_url, description, person_name, card_style, is_active")
     .order("rarity")
     .order("name");
+
+  if (query) {
+    cardsQuery = cardsQuery.ilike("name", `%${query}%`);
+  }
+
+  if (selectedRarity) {
+    cardsQuery = cardsQuery.eq("rarity", selectedRarity);
+  }
+
+  const { data: cards } = await cardsQuery;
 
   return (
     <section className="space-y-6">
@@ -102,6 +119,38 @@ export default async function AdminCardsPage() {
           <h2 className="font-display text-2xl text-white">カード管理</h2>
           <p className="text-sm text-zinc-300">カードの追加・編集・在庫状況を管理します。</p>
         </div>
+        <form action="/admin/cards" method="get" className="flex flex-wrap gap-2">
+          <input
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="カード名で検索"
+            className="flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white"
+          />
+          <select
+            name="rarity"
+            defaultValue={selectedRarity}
+            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white"
+          >
+            <option value="">全レア度</option>
+            {RARITIES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="rounded-full border border-white/15 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/80 transition hover:border-neon-blue hover:text-white"
+          >
+            検索
+          </button>
+          <Link
+            href="/admin/cards"
+            className="rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-neon-blue hover:text-white"
+          >
+            クリア
+          </Link>
+        </form>
         <form action={createCard} className="grid gap-3 md:grid-cols-2">
           <input
             name="name"

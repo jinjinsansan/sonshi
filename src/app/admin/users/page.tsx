@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { requireAdminSession } from "@/lib/admin";
@@ -31,9 +32,15 @@ async function grantTicket(formData: FormData) {
   revalidatePath("/admin/users");
 }
 
-export default async function AdminUsersPage() {
+type AdminUsersPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
+  const { q } = await searchParams;
+  const query = q?.trim().toLowerCase() ?? "";
 
   const [usersResp, ticketTypesResp] = await Promise.all([
     svc.auth.admin.listUsers({ page: 1, perPage: 50 }),
@@ -41,9 +48,14 @@ export default async function AdminUsersPage() {
   ]);
 
   const users = usersResp.data?.users ?? [];
+  const filteredUsers = query
+    ? users.filter((user) =>
+        user.email?.toLowerCase().includes(query) || user.id.toLowerCase().includes(query)
+      )
+    : users;
   const ticketTypes = ticketTypesResp.data ?? [];
 
-  const userIds = users.map((user) => user.id);
+  const userIds = filteredUsers.map((user) => user.id);
   const { data: balances } = userIds.length
     ? await svc
         .from("user_tickets")
@@ -66,6 +78,26 @@ export default async function AdminUsersPage() {
           <h2 className="font-display text-2xl text-white">ユーザー管理</h2>
           <p className="text-sm text-zinc-300">チケット付与とユーザー一覧を確認できます。</p>
         </div>
+        <form action="/admin/users" method="get" className="flex flex-wrap gap-2">
+          <input
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="メール or ユーザーIDで検索"
+            className="flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white"
+          />
+          <button
+            type="submit"
+            className="rounded-full border border-white/15 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/80 transition hover:border-neon-blue hover:text-white"
+          >
+            検索
+          </button>
+          <Link
+            href="/admin/users"
+            className="rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-neon-blue hover:text-white"
+          >
+            クリア
+          </Link>
+        </form>
         <form action={grantTicket} className="grid gap-3 md:grid-cols-4">
           <input
             name="user_id"
@@ -103,14 +135,24 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-5 shadow-panel-inset">
-        {users.length === 0 ? (
-          <p className="text-sm text-zinc-400">ユーザーが存在しません。</p>
+        {filteredUsers.length === 0 ? (
+          <p className="text-sm text-zinc-400">該当ユーザーが存在しません。</p>
         ) : (
           <div className="space-y-3 text-sm">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <div key={user.id} className="border-b border-white/5 pb-3">
-                <p className="font-display text-white">{user.email ?? "(no email)"}</p>
-                <p className="text-xs text-zinc-400">{user.id}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-display text-white">{user.email ?? "(no email)"}</p>
+                    <p className="text-xs text-zinc-400">{user.id}</p>
+                  </div>
+                  <Link
+                    href={`/admin/users/${user.id}`}
+                    className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-neon-blue hover:text-white"
+                  >
+                    詳細
+                  </Link>
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-300">
                   {(ticketsByUser.get(user.id) ?? []).length === 0 ? (
                     <span className="text-zinc-500">チケットなし</span>
