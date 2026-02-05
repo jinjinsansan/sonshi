@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+const normalizeUrl = (value?: string) => {
+  if (!value) return undefined;
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return `https://${value}`;
+};
+
+const vercelUrl = normalizeUrl(process.env.NEXT_PUBLIC_VERCEL_URL ?? process.env.VERCEL_URL);
+const resolvedAppUrl =
+  normalizeUrl(process.env.NEXT_PUBLIC_APP_URL)
+  ?? normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL)
+  ?? vercelUrl
+  ?? "http://localhost:3000";
+const resolvedSiteUrl = normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL) ?? vercelUrl ?? resolvedAppUrl;
+
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
@@ -31,8 +45,8 @@ const serverSchema = z.object({
 export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_APP_URL: resolvedAppUrl,
+  NEXT_PUBLIC_SITE_URL: resolvedSiteUrl,
   NEXT_PUBLIC_SITE_NAME: process.env.NEXT_PUBLIC_SITE_NAME,
   NEXT_PUBLIC_ONE_LAT_BASE_URL: process.env.NEXT_PUBLIC_ONE_LAT_BASE_URL,
   NEXT_PUBLIC_R2_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL,
