@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -17,10 +17,11 @@ export function SplashGateway() {
       setTimeout(() => setPhase("icon-fly"), 1500),
       setTimeout(() => setPhase("sonshi-rotate"), 1800),
       setTimeout(() => setPhase("complete"), 3800),
-      setTimeout(() => router.push("/login"), 4000),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [router]);
+  }, []);
+
+  const heroLines = useMemo(() => ["SONSHI", "GACHA"], []);
 
   const iconVariants: Variants = {
     appear: {
@@ -120,8 +121,8 @@ export function SplashGateway() {
           </motion.div>
         </div>
 
-        {/* Loading Text */}
-        {phase !== "complete" && (
+        {/* Loading Text / Hero */}
+        {phase !== "complete" ? (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -129,6 +130,38 @@ export function SplashGateway() {
           >
             LOADING
           </motion.p>
+        ) : (
+          <motion.div
+            className="mt-10 w-full space-y-6 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.5em] text-neon-blue">TOP</p>
+              <div className="font-display text-5xl leading-[1.1] text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.25)]">
+                {heroLines.map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
+              <p className="text-sm text-zinc-300">尊師と仲間たちのガチャカードをコレクションしよう</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="h-14 w-full rounded-full bg-neon-yellow font-display text-sm uppercase tracking-[0.35em] text-black shadow-[0_0_25px_rgba(255,255,0,0.45)]"
+              >
+                タップして入場
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/register")}
+                className="h-12 w-full rounded-full border border-white/15 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+              >
+                新規登録はこちら
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
