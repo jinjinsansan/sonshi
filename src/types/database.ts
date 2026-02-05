@@ -782,7 +782,23 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      start_multi_gacha: {
+        Args: {
+          p_user_id: string;
+          p_gacha_id: string;
+          p_ticket_type_id: string;
+          p_total_pulls: number;
+          p_session_type: string;
+          p_results: Json;
+          p_scenario: Json;
+        };
+        Returns: {
+          session_id: string;
+          remaining_quantity: number;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

@@ -52,9 +52,12 @@ export default async function GachaPage() {
               >
                 1回ガチャ
               </Link>
-              <span className="rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80">
-                10連準備中
-              </span>
+              <Link
+                href="/gacha/multi"
+                className="rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80"
+              >
+                連続ガチャ
+              </Link>
             </div>
           </article>
         ))}
