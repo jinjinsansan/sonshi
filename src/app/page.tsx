@@ -1,14 +1,10 @@
 import { redirect } from "next/navigation";
 import { SplashGateway } from "@/components/landing/splash-gateway";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/auth/session";
 
 export default async function LandingPage() {
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (session) {
+  const user = await getServerAuthUser();
+  if (user) {
     redirect("/home");
   }
 

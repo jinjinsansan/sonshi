@@ -42,9 +42,9 @@ export default async function AdminCardDetailPage({ params, searchParams }: Card
 
   await Promise.all(
     ownerIds.slice(0, 30).map(async (ownerId) => {
-      const { data } = await svc.auth.admin.getUserById(ownerId);
-      if (data?.user?.email) {
-        ownerEmails.set(ownerId, data.user.email);
+      const { data } = await svc.from("app_users").select("email").eq("id", ownerId).maybeSingle();
+      if (data?.email) {
+        ownerEmails.set(ownerId, data.email);
       }
     })
   );

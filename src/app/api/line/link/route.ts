@@ -1,26 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
-async function getUser(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  return { applyCookies, user, error };
-}
-
 export async function POST(request: NextRequest) {
-  const { applyCookies, user, error } = await getUser(request);
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
   const lineUserId = typeof body.lineUserId === "string" ? body.lineUserId.trim() : "";
   if (!lineUserId) {
-    return applyCookies(NextResponse.json({ error: "LINEユーザーIDを入力してください" }, { status: 400 }));
+    return NextResponse.json({ error: "LINEユーザーIDを入力してください" }, { status: 400 });
   }
 
   const serviceSupabase = getSupabaseServiceClient();
@@ -32,7 +23,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing?.ticket_granted) {
-    return applyCookies(NextResponse.json({ message: "既に特典を受け取っています" }, { status: 200 }));
+    return NextResponse.json({ message: "既に特典を受け取っています" }, { status: 200 });
   }
 
   const payload = {
@@ -48,8 +39,8 @@ export async function POST(request: NextRequest) {
     .upsert(payload, { onConflict: "user_id" });
 
   if (upsertError) {
-    return applyCookies(NextResponse.json({ error: upsertError.message }, { status: 500 }));
+    return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
-  return applyCookies(NextResponse.json({ message: "LINE連携を保存しました" }, { status: 200 }));
+  return NextResponse.json({ message: "LINE連携を保存しました" }, { status: 200 });
 }

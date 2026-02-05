@@ -1,15 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
-
-async function getUser(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  return { applyCookies, user, error };
-}
 
 async function grantFreeTicket(serviceSupabase: ReturnType<typeof getSupabaseServiceClient>, userId: string) {
   const { data: ticketType } = await serviceSupabase
@@ -48,15 +39,15 @@ async function grantFreeTicket(serviceSupabase: ReturnType<typeof getSupabaseSer
 }
 
 export async function POST(request: NextRequest) {
-  const { applyCookies, user, error } = await getUser(request);
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
   const referralCode = typeof body.code === "string" ? body.code.trim() : "";
   if (!referralCode) {
-    return applyCookies(NextResponse.json({ error: "紹介コードを入力してください" }, { status: 400 }));
+    return NextResponse.json({ error: "紹介コードを入力してください" }, { status: 400 });
   }
 
   const serviceSupabase = getSupabaseServiceClient();
@@ -68,7 +59,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existingReferral) {
-    return applyCookies(NextResponse.json({ error: "既に紹介特典を受け取っています" }, { status: 400 }));
+    return NextResponse.json({ error: "既に紹介特典を受け取っています" }, { status: 400 });
   }
 
   let { data: codeOwner } = await serviceSupabase
@@ -90,11 +81,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (!codeOwner?.referrer_id) {
-    return applyCookies(NextResponse.json({ error: "紹介コードが無効です" }, { status: 404 }));
+    return NextResponse.json({ error: "紹介コードが無効です" }, { status: 404 });
   }
 
   if (codeOwner.referrer_id === user.id) {
-    return applyCookies(NextResponse.json({ error: "自分のコードは利用できません" }, { status: 400 }));
+    return NextResponse.json({ error: "自分のコードは利用できません" }, { status: 400 });
   }
 
   const now = new Date().toISOString();
@@ -112,9 +103,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (referralError || !referralRow) {
-    return applyCookies(
-      NextResponse.json({ error: referralError?.message ?? "紹介処理に失敗しました" }, { status: 500 })
-    );
+    return NextResponse.json({ error: referralError?.message ?? "紹介処理に失敗しました" }, { status: 500 });
   }
 
   const [referrerGrant, referredGrant] = await Promise.all([
@@ -123,11 +112,9 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (referrerGrant.error || referredGrant.error) {
-    return applyCookies(
-      NextResponse.json(
-        { error: referrerGrant.error ?? referredGrant.error ?? "チケット付与に失敗しました" },
-        { status: 500 }
-      )
+    return NextResponse.json(
+      { error: referrerGrant.error ?? referredGrant.error ?? "チケット付与に失敗しました" },
+      { status: 500 }
     );
   }
 
@@ -137,14 +124,12 @@ export async function POST(request: NextRequest) {
     .eq("id", referralRow.id);
 
   if (updateError) {
-    return applyCookies(NextResponse.json({ error: updateError.message }, { status: 500 }));
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json({
-      message: "フリーチケットを付与しました",
-      referrerQuantity: referrerGrant.quantity,
-      referredQuantity: referredGrant.quantity,
-    })
-  );
+  return NextResponse.json({
+    message: "フリーチケットを付与しました",
+    referrerQuantity: referrerGrant.quantity,
+    referredQuantity: referredGrant.quantity,
+  });
 }

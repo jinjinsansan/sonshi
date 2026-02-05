@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/auth/session";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
@@ -9,17 +9,13 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
 const ALLOW_ALL_NON_PROD = ADMIN_EMAILS.length === 0 && process.env.NODE_ENV !== "production";
 
 export async function requireAdminSession() {
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const userEmail = session?.user?.email?.toLowerCase() ?? null;
+  const user = await getServerAuthUser();
+  const userEmail = user?.email?.toLowerCase() ?? null;
   const allowed = ALLOW_ALL_NON_PROD || (userEmail ? ADMIN_EMAILS.includes(userEmail) : false);
 
-  if (!session || !allowed) {
+  if (!user || !allowed) {
     redirect("/home");
   }
 
-  return session;
+  return user;
 }

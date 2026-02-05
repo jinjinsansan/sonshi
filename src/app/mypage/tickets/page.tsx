@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { LoginBonusCard } from "@/components/home/login-bonus-card";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/auth/session";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import type { TicketBalanceItem } from "@/lib/utils/tickets";
 
 const FALLBACK_TICKETS: TicketBalanceItem[] = [
@@ -11,14 +12,12 @@ const FALLBACK_TICKETS: TicketBalanceItem[] = [
 ];
 
 async function loadTicketBalances(): Promise<TicketBalanceItem[]> {
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+  const user = await getServerAuthUser();
+  if (!user) {
     return FALLBACK_TICKETS;
   }
+
+  const supabase = getSupabaseServiceClient();
 
   const { data: ticketTypes, error: ticketTypeError } = await supabase
     .from("ticket_types")
@@ -32,7 +31,7 @@ async function loadTicketBalances(): Promise<TicketBalanceItem[]> {
   const { data: balances, error: balanceError } = await supabase
     .from("user_tickets")
     .select("ticket_type_id, quantity")
-    .eq("user_id", session.user.id);
+    .eq("user_id", user.id);
 
   if (balanceError) {
     return FALLBACK_TICKETS;

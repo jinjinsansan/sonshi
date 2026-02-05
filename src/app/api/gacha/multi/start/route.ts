@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { buildScenario, type Rarity } from "@/lib/gacha/scenario";
 import { buildRarityWeights, pickRarity } from "@/lib/gacha/pool";
@@ -35,14 +35,9 @@ function pickRandom<T>(items: T[]) {
 }
 
 export async function POST(request: NextRequest) {
-  const { supabase: authSupabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error: userError,
-  } = await authSupabase.auth.getUser();
-
-  if (userError || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
@@ -51,7 +46,7 @@ export async function POST(request: NextRequest) {
   const sessionType = SESSION_TYPE_BY_PULLS[totalPulls];
 
   if (!requestedGacha || !sessionType) {
-    return applyCookies(NextResponse.json({ error: "連続ガチャの指定が不正です" }, { status: 400 }));
+    return NextResponse.json({ error: "連続ガチャの指定が不正です" }, { status: 400 });
   }
 
   const resolvedSlug = canonicalizeGachaId(requestedGacha) ?? requestedGacha.toLowerCase();
@@ -64,7 +59,7 @@ export async function POST(request: NextRequest) {
     .returns<DbGacha[]>();
 
   if (gachaError) {
-    return applyCookies(NextResponse.json({ error: gachaError.message }, { status: 500 }));
+    return NextResponse.json({ error: gachaError.message }, { status: 500 });
   }
 
   const gacha = (gachaRows ?? []).find((entry) => {
@@ -78,7 +73,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!gacha) {
-    return applyCookies(NextResponse.json({ error: "ガチャが見つかりません" }, { status: 404 }));
+    return NextResponse.json({ error: "ガチャが見つかりません" }, { status: 404 });
   }
 
   const { data: balance, error: balanceError } = await serviceSupabase
@@ -90,11 +85,11 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (balanceError) {
-    return applyCookies(NextResponse.json({ error: balanceError.message }, { status: 500 }));
+    return NextResponse.json({ error: balanceError.message }, { status: 500 });
   }
 
   if (!balance || (balance.quantity ?? 0) < totalPulls) {
-    return applyCookies(NextResponse.json({ error: "チケットが不足しています" }, { status: 400 }));
+    return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
   }
 
   const { data: cards, error: cardsError } = await serviceSupabase
@@ -103,7 +98,7 @@ export async function POST(request: NextRequest) {
     .eq("is_active", true);
 
   if (cardsError) {
-    return applyCookies(NextResponse.json({ error: cardsError.message }, { status: 500 }));
+    return NextResponse.json({ error: cardsError.message }, { status: 500 });
   }
 
   const availableCards = (cards ?? []).filter((card) => {
@@ -112,7 +107,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (availableCards.length === 0) {
-    return applyCookies(NextResponse.json({ error: "排出可能なカードがありません" }, { status: 400 }));
+    return NextResponse.json({ error: "排出可能なカードがありません" }, { status: 400 });
   }
 
   const { data: probabilities, error: probabilityError } = await serviceSupabase
@@ -121,7 +116,7 @@ export async function POST(request: NextRequest) {
     .eq("is_active", true);
 
   if (probabilityError) {
-    return applyCookies(NextResponse.json({ error: probabilityError.message }, { status: 500 }));
+    return NextResponse.json({ error: probabilityError.message }, { status: 500 });
   }
 
   const rarityWeights = buildRarityWeights(probabilities ?? []);
@@ -178,7 +173,7 @@ export async function POST(request: NextRequest) {
     const desiredRarity = pickRarity(rarityWeights, minRarity);
     const picked = pickEligibleCard(desiredRarity) ?? pickEligibleCard();
     if (!picked) {
-      return applyCookies(NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 }));
+      return NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 });
     }
     if (shouldGuarantee) {
       pityCounter = 0;
@@ -219,26 +214,24 @@ export async function POST(request: NextRequest) {
   if (rpcError) {
     const message = rpcError.message;
     if (message.includes("INSUFFICIENT_TICKETS")) {
-      return applyCookies(NextResponse.json({ error: "チケットが不足しています" }, { status: 400 }));
+      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
     }
     if (message.includes("CARD_SUPPLY_EXCEEDED") || message.includes("duplicate key")) {
-      return applyCookies(NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 }));
+      return NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 });
     }
-    return applyCookies(NextResponse.json({ error: message }, { status: 500 }));
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
   if (!payload?.session_id) {
-    return applyCookies(NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 }));
+    return NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json({
-      sessionId: payload.session_id,
-      totalPulls,
-      currentPull: 0,
-      status: "in_progress",
-      remaining: payload.remaining_quantity ?? (balance.quantity ?? 0) - totalPulls,
-    })
-  );
+  return NextResponse.json({
+    sessionId: payload.session_id,
+    totalPulls,
+    currentPull: 0,
+    status: "in_progress",
+    remaining: payload.remaining_quantity ?? (balance.quantity ?? 0) - totalPulls,
+  });
 }

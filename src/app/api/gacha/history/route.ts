@@ -1,16 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function GET(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = getSupabaseServiceClient();
 
   const { data, error: historyError } = await supabase
     .from("gacha_results")
@@ -25,8 +23,8 @@ export async function GET(request: NextRequest) {
     .limit(20);
 
   if (historyError) {
-    return applyCookies(NextResponse.json({ error: historyError.message }, { status: 500 }));
+    return NextResponse.json({ error: historyError.message }, { status: 500 });
   }
 
-  return applyCookies(NextResponse.json({ history: data ?? [] }));
+  return NextResponse.json({ history: data ?? [] });
 }

@@ -1,16 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function GET(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = getSupabaseServiceClient();
 
   const { data, error: collectionError } = await supabase
     .from("card_inventory")
@@ -23,7 +21,7 @@ export async function GET(request: NextRequest) {
     .order("obtained_at", { ascending: false });
 
   if (collectionError) {
-    return applyCookies(NextResponse.json({ error: collectionError.message }, { status: 500 }));
+    return NextResponse.json({ error: collectionError.message }, { status: 500 });
   }
 
   const totalOwned = data?.length ?? 0;
@@ -36,16 +34,14 @@ export async function GET(request: NextRequest) {
     .order("rarity", { ascending: false });
 
   if (cardsError) {
-    return applyCookies(NextResponse.json({ error: cardsError.message }, { status: 500 }));
+    return NextResponse.json({ error: cardsError.message }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json({
-      totalOwned,
-      distinctOwned,
-      totalAvailable: allCards?.length ?? 0,
-      collection: data ?? [],
-      cards: allCards ?? [],
-    })
-  );
+  return NextResponse.json({
+    totalOwned,
+    distinctOwned,
+    totalAvailable: allCards?.length ?? 0,
+    collection: data ?? [],
+    cards: allCards ?? [],
+  });
 }

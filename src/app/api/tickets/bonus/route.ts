@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 const RESET_HOUR = 10;
@@ -15,19 +15,10 @@ function getWindow(now = new Date()) {
   return { windowStart, nextResetAt };
 }
 
-async function getUser(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  return { supabase, applyCookies, user, error };
-}
-
 export async function GET(request: NextRequest) {
-  const { applyCookies, user, error } = await getUser(request);
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const serviceSupabase = getSupabaseServiceClient();
@@ -41,19 +32,17 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   const claimed = data ? new Date(data.claimed_at) >= windowStart : false;
-  return applyCookies(
-    NextResponse.json({
-      claimed,
-      nextResetAt: nextResetAt.toISOString(),
-      windowStart: windowStart.toISOString(),
-    })
-  );
+  return NextResponse.json({
+    claimed,
+    nextResetAt: nextResetAt.toISOString(),
+    windowStart: windowStart.toISOString(),
+  });
 }
 
 export async function POST(request: NextRequest) {
-  const { applyCookies, user, error } = await getUser(request);
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const serviceSupabase = getSupabaseServiceClient();
@@ -68,14 +57,12 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (lastClaim && new Date(lastClaim.claimed_at) >= windowStart) {
-    return applyCookies(
-      NextResponse.json(
-        {
-          error: "本日は受け取り済みです",
-          nextResetAt: nextResetAt.toISOString(),
-        },
-        { status: 400 }
-      )
+    return NextResponse.json(
+      {
+        error: "本日は受け取り済みです",
+        nextResetAt: nextResetAt.toISOString(),
+      },
+      { status: 400 }
     );
   }
 
@@ -89,7 +76,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!ticketType) {
-    return applyCookies(NextResponse.json({ error: "freeチケットが未定義です" }, { status: 500 }));
+    return NextResponse.json({ error: "freeチケットが未定義です" }, { status: 500 });
   }
 
   const { data: current } = await serviceSupabase
@@ -113,7 +100,7 @@ export async function POST(request: NextRequest) {
     .upsert(upsertPayload, { onConflict: "user_id,ticket_type_id" });
 
   if (upsertError) {
-    return applyCookies(NextResponse.json({ error: upsertError.message }, { status: 500 }));
+    return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
   const { error: claimError } = await serviceSupabase.from("login_bonus_claims").insert({
@@ -122,19 +109,17 @@ export async function POST(request: NextRequest) {
   });
 
   if (claimError) {
-    return applyCookies(NextResponse.json({ error: claimError.message }, { status: 500 }));
+    return NextResponse.json({ error: claimError.message }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json(
-      {
-        ticket: "free",
-        amount: 1,
-        message: "フリーチケットを付与しました",
-        nextResetAt: nextResetAt.toISOString(),
-        quantity: newQuantity,
-      },
-      { status: 200 }
-    )
+  return NextResponse.json(
+    {
+      ticket: "free",
+      amount: 1,
+      message: "フリーチケットを付与しました",
+      nextResetAt: nextResetAt.toISOString(),
+      quantity: newQuantity,
+    },
+    { status: 200 }
   );
 }

@@ -20,7 +20,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPro
   const svc = getSupabaseServiceClient();
 
   const [userResp, ticketResp, historyResp, inventoryResp, referralResp] = await Promise.all([
-    svc.auth.admin.getUserById(id),
+    svc.from("app_users").select("id, email, email_verified, created_at, last_login_at").eq("id", id).maybeSingle(),
     svc.from("user_tickets").select("quantity, ticket_types(code, name)").eq("user_id", id),
     svc
       .from("gacha_results")
@@ -42,7 +42,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPro
       .limit(20),
   ]);
 
-  const user = userResp.data?.user;
+  const user = userResp.data;
   if (!user) {
     return (
       <section className="space-y-6">

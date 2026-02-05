@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { TabBar, type TabBarItem } from "@/components/layout/tab-bar";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/auth/session";
 
 const tabs: TabBarItem[] = [
   { label: "HOME", href: "/home", icon: "home" },
@@ -16,12 +16,8 @@ type MainLayoutProps = {
 };
 
 export default async function MainLayout({ children }: MainLayoutProps) {
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+  const user = await getServerAuthUser();
+  if (!user) {
     redirect("/login");
   }
 

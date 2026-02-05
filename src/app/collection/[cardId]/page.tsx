@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerAuthUser } from "@/lib/auth/session";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 const RARITY_LABELS: Record<string, string> = {
   N: "N",
@@ -17,14 +18,12 @@ type CardDetailProps = {
 
 export default async function CardDetailPage({ params }: CardDetailProps) {
   const { cardId } = await params;
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+  const user = await getServerAuthUser();
+  if (!user) {
     redirect("/login");
   }
+
+  const supabase = getSupabaseServiceClient();
 
   const { data: inventory, error } = await supabase
     .from("card_inventory")
@@ -32,7 +31,7 @@ export default async function CardDetailPage({ params }: CardDetailProps) {
       `serial_number, obtained_at,
        cards (id, name, rarity, description, image_url, max_supply, current_supply, person_name, card_style)`
     )
-    .eq("owner_id", session.user.id)
+    .eq("owner_id", user.id)
     .eq("card_id", cardId)
     .order("serial_number", { ascending: true });
 

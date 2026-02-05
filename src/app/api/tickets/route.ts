@@ -1,17 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function GET(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = getSupabaseServiceClient();
 
   const { data: ticketTypes, error: ticketTypeError } = await supabase
     .from("ticket_types")
@@ -19,7 +16,7 @@ export async function GET(request: NextRequest) {
     .order("sort_order", { ascending: true });
 
   if (ticketTypeError) {
-    return applyCookies(NextResponse.json({ error: ticketTypeError.message }, { status: 500 }));
+    return NextResponse.json({ error: ticketTypeError.message }, { status: 500 });
   }
 
   const { data: balances, error: balanceError } = await supabase
@@ -28,7 +25,7 @@ export async function GET(request: NextRequest) {
     .eq("user_id", user.id);
 
   if (balanceError) {
-    return applyCookies(NextResponse.json({ error: balanceError.message }, { status: 500 }));
+    return NextResponse.json({ error: balanceError.message }, { status: 500 });
   }
 
   const quantityByType = new Map(
@@ -43,5 +40,5 @@ export async function GET(request: NextRequest) {
     quantity: quantityByType.get(type.id) ?? 0,
   }));
 
-  return applyCookies(NextResponse.json({ tickets }));
+  return NextResponse.json({ tickets });
 }

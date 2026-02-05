@@ -43,11 +43,11 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
   const query = q?.trim().toLowerCase() ?? "";
 
   const [usersResp, ticketTypesResp] = await Promise.all([
-    svc.auth.admin.listUsers({ page: 1, perPage: 50 }),
+    svc.from("app_users").select("id, email, email_verified, created_at").order("created_at", { ascending: false }),
     svc.from("ticket_types").select("id, code, name").order("sort_order"),
   ]);
 
-  const users = usersResp.data?.users ?? [];
+  const users = usersResp.data ?? [];
   const filteredUsers = query
     ? users.filter((user) =>
         user.email?.toLowerCase().includes(query) || user.id.toLowerCase().includes(query)

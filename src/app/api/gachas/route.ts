@@ -1,8 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { TICKET_THEMES, type TicketCode } from "@/constants/tickets";
 import { buildGachaSearchKey, canonicalizeGachaId } from "@/lib/utils/gacha";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import type { Database } from "@/types/database";
 
 type DbGacha = Database["public"]["Tables"]["gachas"]["Row"] & {
@@ -48,8 +48,8 @@ function mapDbToDefinition(gacha: DbGacha) {
   };
 }
 
-export async function GET(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
+export async function GET() {
+  const supabase = getSupabaseServiceClient();
 
   const { data, error } = await supabase
     .from("gachas")
@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
     .order("sort_order", { ascending: true });
 
   if (error) {
-    return applyCookies(NextResponse.json({ gachas: GACHA_DEFINITIONS }, { status: 200 }));
+    return NextResponse.json({ gachas: GACHA_DEFINITIONS }, { status: 200 });
   }
 
   const mapped = ((data ?? []) as DbGacha[]).map(mapDbToDefinition);
   const payload = mapped.length > 0 ? mapped : GACHA_DEFINITIONS;
-  return applyCookies(NextResponse.json({ gachas: payload }, { status: 200 }));
+  return NextResponse.json({ gachas: payload }, { status: 200 });
 }

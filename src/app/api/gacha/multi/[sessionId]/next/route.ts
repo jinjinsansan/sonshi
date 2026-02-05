@@ -1,19 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ sessionId: string }> }
 ) {
-  const { supabase: authSupabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error: userError,
-  } = await authSupabase.auth.getUser();
-
-  if (userError || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { sessionId } = await context.params;
@@ -26,11 +21,11 @@ export async function POST(
     .maybeSingle();
 
   if (error || !session) {
-    return applyCookies(NextResponse.json({ error: error?.message ?? "セッションが見つかりません" }, { status: 404 }));
+    return NextResponse.json({ error: error?.message ?? "セッションが見つかりません" }, { status: 404 });
   }
 
   if (session.user_id !== user.id) {
-    return applyCookies(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const totalPulls = session.total_pulls ?? 0;
@@ -39,15 +34,13 @@ export async function POST(
   const scenario = Array.isArray(session.scenario_path) ? session.scenario_path : [];
 
   if (currentPull >= totalPulls) {
-    return applyCookies(
-      NextResponse.json({
-        done: true,
-        status: session.status ?? "completed",
-        currentPull,
-        totalPulls,
-        results,
-      })
-    );
+    return NextResponse.json({
+      done: true,
+      status: session.status ?? "completed",
+      currentPull,
+      totalPulls,
+      results,
+    });
   }
 
   const nextIndex = currentPull + 1;
@@ -70,17 +63,15 @@ export async function POST(
     .eq("id", sessionId);
 
   if (updateError) {
-    return applyCookies(NextResponse.json({ error: updateError.message }, { status: 500 }));
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json({
-      currentPull: nextIndex,
-      totalPulls,
-      status: nextStatus,
-      result: nextResult,
-      scenario: nextScenario,
-      done: isFinal,
-    })
-  );
+  return NextResponse.json({
+    currentPull: nextIndex,
+    totalPulls,
+    status: nextStatus,
+    result: nextResult,
+    scenario: nextScenario,
+    done: isFinal,
+  });
 }

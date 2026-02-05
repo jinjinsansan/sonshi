@@ -34,18 +34,16 @@ export default async function AdminPage() {
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
 
-  const authSchema = (svc as typeof svc & { schema?: (schema: string) => typeof svc }).schema?.("auth") ?? (svc as typeof svc);
-  const [usersResp, cardsResp, pullsResp, inventoryResp, referralsResp, authCountResp] = await Promise.all([
-    svc.auth.admin.listUsers({ page: 1, perPage: 1 }),
+  const [usersResp, cardsResp, pullsResp, inventoryResp, referralsResp] = await Promise.all([
+    svc.from("app_users").select("id", { count: "exact", head: true }),
     svc.from("cards").select("id", { count: "exact", head: true }),
     svc.from("gacha_results").select("id", { count: "exact", head: true }),
     svc.from("card_inventory").select("id", { count: "exact", head: true }),
     svc.from("referrals").select("id", { count: "exact", head: true }),
-    authSchema.from("users").select("id", { count: "exact", head: true }),
   ]);
 
   const stats = [
-    { label: "ユーザー", value: authCountResp.count ?? usersResp.data?.users?.length ?? 0 },
+    { label: "ユーザー", value: usersResp.count ?? 0 },
     { label: "カード", value: cardsResp.count ?? 0 },
     { label: "ガチャ結果", value: pullsResp.count ?? 0 },
     { label: "在庫", value: inventoryResp.count ?? 0 },

@@ -6,7 +6,7 @@ import { RARITY_ORDER } from "@/lib/gacha/rarity";
 
 async function updateProbability(formData: FormData) {
   "use server";
-  const session = await requireAdminSession();
+  const user = await requireAdminSession();
   const svc = getSupabaseServiceClient();
 
   const rowIds = formData.getAll("row_id").map((value) => String(value));
@@ -50,8 +50,8 @@ async function updateProbability(formData: FormData) {
   );
 
   await svc.from("gacha_probability_history").insert({
-    admin_user_id: session.user.id,
-    admin_email: session.user.email ?? null,
+    admin_user_id: user.id,
+    admin_email: user.email ?? null,
     snapshot: rows,
     total_probability: total,
   });

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/route-client";
+import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { publicEnv } from "@/lib/env";
 
@@ -14,24 +14,15 @@ function generateCode() {
   return result;
 }
 
-async function getUser(request: NextRequest) {
-  const { supabase, applyCookies } = createSupabaseRouteClient(request);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  return { applyCookies, user, error };
-}
-
 function buildInviteUrl(code: string) {
   const base = publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   return `${base}/invite/${code}`;
 }
 
 export async function GET(request: NextRequest) {
-  const { applyCookies, user, error } = await getUser(request);
-  if (error || !user) {
-    return applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+  const user = await getRequestAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const serviceSupabase = getSupabaseServiceClient();
@@ -75,15 +66,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (!referralCode) {
-    return applyCookies(
-      NextResponse.json({ error: "紹介コードの生成に失敗しました" }, { status: 500 })
-    );
+    return NextResponse.json({ error: "紹介コードの生成に失敗しました" }, { status: 500 });
   }
 
-  return applyCookies(
-    NextResponse.json({
-      code: referralCode,
-      inviteUrl: buildInviteUrl(referralCode),
-    })
-  );
+  return NextResponse.json({
+    code: referralCode,
+    inviteUrl: buildInviteUrl(referralCode),
+  });
 }
