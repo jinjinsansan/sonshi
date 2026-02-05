@@ -36,11 +36,22 @@ const RARITY_LABELS: Record<string, string> = {
   UR: "UR",
 };
 
+const RARITY_ORDER: Record<string, number> = {
+  N: 1,
+  R: 2,
+  SR: 3,
+  SSR: 4,
+  UR: 5,
+};
+
 export function CollectionList() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");
   const [sort, setSort] = useState<"recent" | "rarity" | "name">("recent");
+  const [rarityFilter, setRarityFilter] = useState("all");
+  const [personFilter, setPersonFilter] = useState("all");
+  const [styleFilter, setStyleFilter] = useState("all");
 
   useEffect(() => {
     let mounted = true;
@@ -62,22 +73,60 @@ export function CollectionList() {
     };
   }, []);
 
+  const filterOptions = useMemo(() => {
+    if (!data) {
+      return { persons: [], styles: [], rarities: [] };
+    }
+    const persons = Array.from(
+      new Set(
+        data.collection
+          .map((item) => item.cards?.person_name)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort();
+    const styles = Array.from(
+      new Set(
+        data.collection
+          .map((item) => item.cards?.card_style)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort();
+    const rarities = Array.from(
+      new Set(
+        data.collection
+          .map((item) => item.cards?.rarity)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort((a, b) => (RARITY_ORDER[b] ?? 0) - (RARITY_ORDER[a] ?? 0));
+
+    return { persons, styles, rarities };
+  }, [data]);
+
   const filtered = useMemo(() => {
     if (!data) return [];
     const lower = keyword.toLowerCase();
     const list = data.collection.filter((item) => {
       const name = item.cards?.name?.toLowerCase() ?? "";
-      return name.includes(lower);
+      const rarity = item.cards?.rarity ?? "";
+      const person = item.cards?.person_name ?? "";
+      const style = item.cards?.card_style ?? "";
+      const matchesKeyword = name.includes(lower);
+      const matchesRarity = rarityFilter === "all" || rarity === rarityFilter;
+      const matchesPerson = personFilter === "all" || person === personFilter;
+      const matchesStyle = styleFilter === "all" || style === styleFilter;
+      return matchesKeyword && matchesRarity && matchesPerson && matchesStyle;
     });
 
     if (sort === "rarity") {
-      return list.sort((a, b) => (b.cards?.rarity ?? "").localeCompare(a.cards?.rarity ?? ""));
+      return list.sort(
+        (a, b) => (RARITY_ORDER[b.cards?.rarity ?? ""] ?? 0) - (RARITY_ORDER[a.cards?.rarity ?? ""] ?? 0)
+      );
     }
     if (sort === "name") {
       return list.sort((a, b) => (a.cards?.name ?? "").localeCompare(b.cards?.name ?? ""));
     }
     return list.sort((a, b) => (b.obtained_at ?? "").localeCompare(a.obtained_at ?? ""));
-  }, [data, keyword, sort]);
+  }, [data, keyword, sort, rarityFilter, personFilter, styleFilter]);
 
   if (error) {
     return <p className="text-sm text-red-400">{error}</p>;
@@ -103,6 +152,42 @@ export function CollectionList() {
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
         />
+        <select
+          value={rarityFilter}
+          onChange={(e) => setRarityFilter(e.target.value)}
+          className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
+        >
+          <option value="all">レア度</option>
+          {filterOptions.rarities.map((rarity) => (
+            <option key={rarity} value={rarity}>
+              {RARITY_LABELS[rarity] ?? rarity}
+            </option>
+          ))}
+        </select>
+        <select
+          value={personFilter}
+          onChange={(e) => setPersonFilter(e.target.value)}
+          className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
+        >
+          <option value="all">人物</option>
+          {filterOptions.persons.map((person) => (
+            <option key={person} value={person}>
+              {person}
+            </option>
+          ))}
+        </select>
+        <select
+          value={styleFilter}
+          onChange={(e) => setStyleFilter(e.target.value)}
+          className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
+        >
+          <option value="all">スタイル</option>
+          {filterOptions.styles.map((style) => (
+            <option key={style} value={style}>
+              {style}
+            </option>
+          ))}
+        </select>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as "recent" | "rarity" | "name")}
@@ -150,8 +235,12 @@ export function CollectionList() {
                   <p className="mt-1 text-xs text-zinc-400">
                     #{item.serial_number}
                   </p>
-                  {card.person_name && (
-                    <p className="text-xs text-zinc-500">{card.person_name}</p>
+                  {(card.person_name || card.card_style) && (
+                    <p className="text-xs text-zinc-500">
+                      {card.person_name ?? ""}
+                      {card.person_name && card.card_style ? " / " : ""}
+                      {card.card_style ?? ""}
+                    </p>
                   )}
                 </div>
               </div>
