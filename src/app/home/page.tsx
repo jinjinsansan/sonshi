@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LoginBonusCard } from "@/components/home/login-bonus-card";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
-import { fetchGachaCatalog } from "@/lib/utils/gacha";
+import { canonicalizeGachaId, fetchGachaCatalog } from "@/lib/utils/gacha";
 import { fetchTicketBalances, type TicketBalanceItem } from "@/lib/utils/tickets";
 
 const FALLBACK_TICKETS: TicketBalanceItem[] = [
@@ -30,17 +30,24 @@ export default async function SonshiHome() {
   const tiers = gachaTiers.length > 0 ? gachaTiers : GACHA_DEFINITIONS;
 
   return (
-    <section className="space-y-10">
-      <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.6em] text-neon-yellow">HOME FLOOR</p>
+    <section className="mx-auto w-full max-w-md space-y-10">
+      <div className="glass-panel space-y-3 px-5 py-6">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-neon-yellow">
+          <span>SONSHI HALL</span>
+          <Link href="/mypage" className="text-neon-blue">
+            MYPAGE
+          </Link>
+        </div>
         <h1 className="font-display text-3xl text-white">ホールダッシュボード</h1>
-        <p className="text-sm text-zinc-300">チケット残高と開催中のガチャをまとめて確認できます。</p>
+        <p className="text-sm text-zinc-300">
+          パチスロホールの熱量を感じながら、チケット残高と開催中のガチャを確認できます。
+        </p>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-zinc-400">
           <span>Tickets</span>
-          <Link href="/menu" className="text-neon-blue">
+          <Link href="/mypage/tickets" className="text-neon-blue">
             履歴を見る
           </Link>
         </div>
@@ -57,41 +64,57 @@ export default async function SonshiHome() {
           </Link>
         </div>
         <div className="space-y-4">
-          {tiers.map((tier) => (
-            <article
-              key={tier.id}
-              className={`relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${tier.gradient} p-6 shadow-panel-inset`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-display text-xl text-white">{tier.name}ガチャ</h3>
-                <span className="text-xs uppercase tracking-[0.3em] text-neon-blue">
-                  {formatRarity(tier.rarityRange)}
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-zinc-200">
-                {tier.description || "ネオンホールの最新ラインナップです。"}
-              </p>
-              {tier.featuredNote && (
-                <p className="mt-2 text-xs uppercase tracking-[0.4em] text-neon-yellow">
-                  {tier.featuredNote}
+          {tiers.map((tier) => {
+            const slug = canonicalizeGachaId(tier.id) ?? tier.id;
+            return (
+              <article
+                key={tier.id}
+                className={`relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${tier.gradient} p-6 shadow-panel-inset`}
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-xl text-white">{tier.name}ガチャ</h3>
+                  <span className="text-xs uppercase tracking-[0.3em] text-neon-blue">
+                    {formatRarity(tier.rarityRange)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-zinc-200">
+                  {tier.description || "ネオンホールの最新ラインナップです。"}
                 </p>
-              )}
-              <div className="mt-4 flex items-center justify-between text-xs text-zinc-300">
-                <span>{tier.ticketLabel}</span>
-                <span>{tier.priceLabel || "TICKET"}</span>
-              </div>
-              <div className="mt-4">
-                <Link
-                  href="/gacha"
-                  className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
-                >
-                  ガチャへ
-                </Link>
-              </div>
-            </article>
-          ))}
+                {tier.featuredNote && (
+                  <p className="mt-2 text-xs uppercase tracking-[0.4em] text-neon-yellow">
+                    {tier.featuredNote}
+                  </p>
+                )}
+                <div className="mt-4 flex items-center justify-between text-xs text-zinc-300">
+                  <span>{tier.ticketLabel}</span>
+                  <span>{tier.priceLabel || "TICKET"}</span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    href={`/gacha/${slug}`}
+                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
+                  >
+                    1回ガチャ
+                  </Link>
+                  <Link
+                    href="/gacha/multi"
+                    className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+                  >
+                    連続ガチャ
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
+
+      <Link
+        href="/mypage/tickets"
+        className="flex h-14 items-center justify-center rounded-full border border-white/15 bg-hall-panel/80 text-sm uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
+      >
+        チケット購入へ
+      </Link>
     </section>
   );
 }
