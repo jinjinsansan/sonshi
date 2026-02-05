@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { motion, useAnimation, type Variants } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -10,6 +10,7 @@ type AnimationPhase = "icon-appear" | "collision" | "icon-fly" | "sonshi-rotate"
 export function SplashGateway() {
   const router = useRouter();
   const [phase, setPhase] = useState<AnimationPhase>("icon-appear");
+  const sonshiSpinControls = useAnimation();
 
   useEffect(() => {
     const timers = [
@@ -20,6 +21,21 @@ export function SplashGateway() {
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
+
+  useEffect(() => {
+    if (phase === "sonshi-rotate") {
+      sonshiSpinControls.set({ rotate: 0 });
+      sonshiSpinControls.start({ rotate: 2160, transition: { duration: 1.8, ease: "linear" } });
+    } else {
+      sonshiSpinControls.set({ rotate: 0 });
+    }
+  }, [phase, sonshiSpinControls]);
+
+  useEffect(() => {
+    if (phase !== "complete") return;
+    const timer = setTimeout(() => router.push("/login"), 2000);
+    return () => clearTimeout(timer);
+  }, [phase, router]);
 
   const heroLines = useMemo(() => ["SONSHI", "GACHA"], []);
 
@@ -54,14 +70,13 @@ export function SplashGateway() {
       transition: { duration: 0.8, ease: [0.6, 0.01, 0.05, 0.95] as const },
     },
     rotate: {
-      rotate: 1800,
-      scale: 1.1,
-      transition: { duration: 2, ease: "easeInOut" },
+      x: 0,
+      opacity: 1,
+      scale: 1.15,
     },
     complete: {
-      rotate: 1800,
       scale: 1,
-      transition: { duration: 0.2, ease: "easeOut" },
+      transition: { duration: 0.3, ease: "easeOut" },
     },
   };
 
@@ -93,14 +108,16 @@ export function SplashGateway() {
             animate={getSonshiAnimation()}
             variants={sonshiVariants}
           >
-            <Image
-              src="/sonshi.jpg"
-              alt="SONSHI"
-              width={256}
-              height={256}
-              priority
-              className="h-64 w-64 rounded-3xl object-cover shadow-2xl"
-            />
+            <motion.div animate={sonshiSpinControls} className="origin-center">
+              <Image
+                src="/sonshi.jpg"
+                alt="SONSHI"
+                width={256}
+                height={256}
+                priority
+                className="h-64 w-64 rounded-3xl object-cover shadow-2xl"
+              />
+            </motion.div>
           </motion.div>
 
           {/* Icon Image */}
@@ -137,7 +154,18 @@ export function SplashGateway() {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.5em] text-neon-blue">TOP</p>
+              <div className="flex flex-col items-center gap-4">
+                <div className="neon-crest">
+                  <Image
+                    src="/icon.png"
+                    alt="SONSHI GACHA"
+                    width={72}
+                    height={72}
+                    className="h-16 w-16 rounded-2xl object-cover"
+                  />
+                </div>
+                <p className="text-xs uppercase tracking-[0.5em] text-neon-blue">TOP</p>
+              </div>
               <div className="font-display text-5xl leading-[1.1] text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.25)]">
                 {heroLines.map((line) => (
                   <div key={line}>{line}</div>
@@ -149,7 +177,7 @@ export function SplashGateway() {
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="h-14 w-full rounded-full bg-neon-yellow font-display text-sm uppercase tracking-[0.35em] text-black shadow-[0_0_25px_rgba(255,255,0,0.45)]"
+                className="h-14 w-full rounded-full bg-[#ffe347] font-display text-sm uppercase tracking-[0.35em] text-white shadow-[0_0_22px_rgba(255,255,0,0.45)]"
               >
                 タップして入場
               </button>
