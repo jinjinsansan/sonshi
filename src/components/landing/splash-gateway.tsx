@@ -5,6 +5,36 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+const FEATURED_CARDS = [
+  {
+    name: "尊師ゴールド",
+    rarity: "UR",
+    style: "realphoto",
+    highlight: "+10 連続演出専用",
+    image: "/sonshi.jpg",
+  },
+  {
+    name: "尊師アナザーカット",
+    rarity: "SSR",
+    style: "illustration",
+    highlight: "限定ラインナップ",
+    image: "/icon.png",
+  },
+];
+
+const PICKUP_INFO = [
+  {
+    title: "NEON BURST",
+    ticket: "フリー / ベーシック",
+    note: "短尺導入演出から急上昇",
+  },
+  {
+    title: "SONSHI RUSH",
+    ticket: "エピック以上",
+    note: "尊師カットイン＋レア保証",
+  },
+];
+
 type AnimationPhase = "icon-appear" | "collision" | "icon-fly" | "sonshi-rotate" | "complete";
 
 export function SplashGateway() {
@@ -162,7 +192,7 @@ export function SplashGateway() {
                 </div>
                 <p className="text-[11px] uppercase tracking-[0.55em] text-neon-blue/80">TAP TO ENTER</p>
               </div>
-              <div className="space-y-3">
+            <div className="space-y-3">
                 <div className="font-display text-6xl leading-tight text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.35)]">
                   {heroLines.map((line) => (
                     <div key={line}>{line}</div>
@@ -185,6 +215,55 @@ export function SplashGateway() {
                 className="h-12 w-full rounded-full border border-white/20 text-[11px] uppercase tracking-[0.45em] text-white/80 transition hover:border-neon-blue hover:text-white"
               >
                 新規登録はこちら
+              </button>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-white/10 bg-black/30 p-5 text-left">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">NEW CARDS</p>
+                <span className="text-[11px] uppercase tracking-[0.35em] text-white/60">更新中</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {FEATURED_CARDS.map((card) => (
+                  <div key={card.name} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 p-3">
+                    <Image
+                      src={card.image}
+                      alt={card.name}
+                      width={64}
+                      height={64}
+                      className="h-14 w-14 rounded-2xl object-cover"
+                    />
+                    <div>
+                      <p className="font-display text-base text-white">{card.name}</p>
+                      <p className="text-xs text-neon-blue">
+                        {card.rarity} · {card.style}
+                      </p>
+                      <p className="text-[11px] text-white/60">{card.highlight}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5 text-left">
+              <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">PICK UP</p>
+              <div className="space-y-3">
+                {PICKUP_INFO.map((info) => (
+                  <div key={info.title} className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                    <div className="flex items-center justify-between text-sm text-white">
+                      <span className="font-display text-lg">{info.title}</span>
+                      <span className="text-[11px] uppercase tracking-[0.35em] text-neon-blue">{info.ticket}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-white/70">{info.note}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => router.push("/gacha")}
+                className="w-full rounded-full border border-white/20 py-3 text-[11px] uppercase tracking-[0.4em] text-white/80 transition hover:border-neon-blue hover:text-white"
+              >
+                ガチャラインナップを見る
               </button>
             </div>
           </motion.div>

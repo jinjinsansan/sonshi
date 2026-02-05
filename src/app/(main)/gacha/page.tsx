@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Sparkles, Video, Zap } from "lucide-react";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { canonicalizeGachaId, fetchGachaCatalog } from "@/lib/utils/gacha";
+import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
+import { fetchTicketBalances, type TicketBalanceItem } from "@/lib/utils/tickets";
 
 const RARITY_LABELS = ["N", "R", "SR", "SSR", "UR"];
 
@@ -18,15 +20,27 @@ const ANIMATIONS = [
   { key: "rush", name: "SONSHI RUSH", duration: 8, note: "連打系カットイン" },
 ];
 
+const FALLBACK_TICKETS: TicketBalanceItem[] = [
+  { code: "free", name: "フリーチケット", quantity: 0, colorToken: "neon-blue", sortOrder: 0 },
+  { code: "basic", name: "ベーシック", quantity: 0, colorToken: "neon-yellow", sortOrder: 1 },
+  { code: "epic", name: "エピック", quantity: 0, colorToken: "neon-pink", sortOrder: 2 },
+  { code: "premium", name: "プレミアム", quantity: 0, colorToken: "neon-purple", sortOrder: 3 },
+  { code: "ex", name: "EX", quantity: 0, colorToken: "glow-green", sortOrder: 4 },
+];
+
 function formatRarity(range: [number, number]) {
   const label = (value: number) => RARITY_LABELS[value - 1] ?? `★${value}`;
   return `${label(range[0])}〜${label(range[1])}`;
 }
 
 export default async function GachaPage() {
-  const catalog = await fetchGachaCatalog().catch(() => GACHA_DEFINITIONS);
+  const [catalog, ticketBalances] = await Promise.all([
+    fetchGachaCatalog().catch(() => GACHA_DEFINITIONS),
+    fetchTicketBalances().catch(() => FALLBACK_TICKETS),
+  ]);
   const items = catalog.length > 0 ? catalog : GACHA_DEFINITIONS;
   const featured = items.filter((item) => item.featuredNote).slice(0, 3);
+  const tickets = ticketBalances.length > 0 ? ticketBalances : FALLBACK_TICKETS;
 
   return (
     <section className="space-y-10">
@@ -46,6 +60,16 @@ export default async function GachaPage() {
           </Link>
         </div>
       </header>
+
+      <section className="space-y-3 rounded-3xl border border-white/10 bg-black/25 px-5 py-5">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-neon-yellow">
+          <span>Tickets</span>
+          <Link href="/mypage/tickets" className="text-[11px] text-neon-blue">
+            残高履歴
+          </Link>
+        </div>
+        <TicketBalanceCarousel tickets={tickets} />
+      </section>
 
       <section className="space-y-4">
         <div className="flex flex-wrap gap-3">
@@ -115,7 +139,7 @@ export default async function GachaPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">All Lineup</p>
-            <h3 className="font-display text-2xl text白">全ガチャ一覧</h3>
+            <h3 className="font-display text-2xl text-white">全ガチャ一覧</h3>
           </div>
           <Link href="/collection" className="text-xs uppercase tracking-[0.35em] text-neon-blue">
             図鑑で確認
