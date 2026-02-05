@@ -166,7 +166,7 @@ export async function signUpAction(
 
   const token = await createEmailVerificationToken(user.id);
   const baseUrl = getActionBaseUrl();
-  const verifyUrl = new URL("/auth/verify", baseUrl);
+  const verifyUrl = new URL("/verify", baseUrl);
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
 
@@ -279,7 +279,7 @@ export async function requestEmailChangeAction(
 
   const token = await createEmailChangeToken(user.id, newEmail);
   const baseUrl = getActionBaseUrl();
-  const changeUrl = new URL("/auth/email-change", baseUrl);
+  const changeUrl = new URL("/email-change", baseUrl);
   changeUrl.searchParams.set("token", token);
   await sendEmailChangeVerificationEmail(newEmail, changeUrl.toString());
 
@@ -326,7 +326,7 @@ export async function resendVerificationAction(
 
   const token = await createEmailVerificationToken(user.id);
   const baseUrl = getActionBaseUrl();
-  const verifyUrl = new URL("/auth/verify", baseUrl);
+  const verifyUrl = new URL("/verify", baseUrl);
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
 
