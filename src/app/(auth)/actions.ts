@@ -23,9 +23,9 @@ import {
 import { publicEnv } from "@/lib/env";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
-function getActionBaseUrl() {
+async function getActionBaseUrl() {
   try {
-    const hdrs = headers();
+    const hdrs = await headers();
     const proto = hdrs.get("x-forwarded-proto") ?? "https";
     const host = hdrs.get("host");
     if (host) {
@@ -166,7 +166,8 @@ export async function signUpAction(
   }
 
   const token = await createEmailVerificationToken(user.id);
-  const verifyUrl = new URL("/auth/verify", getActionBaseUrl());
+  const baseUrl = await getActionBaseUrl();
+  const verifyUrl = new URL("/auth/verify", baseUrl);
   verifyUrl.searchParams.set("token", token);
   await sendSignupVerificationEmail(email, verifyUrl.toString());
 
@@ -195,7 +196,8 @@ export async function requestPasswordResetAction(
 
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const resetUrl = new URL("/reset/confirm", getActionBaseUrl());
+    const baseUrl = await getActionBaseUrl();
+    const resetUrl = new URL("/reset/confirm", baseUrl);
     resetUrl.searchParams.set("token", token);
     await sendPasswordResetEmail(email, resetUrl.toString());
   }
@@ -277,7 +279,8 @@ export async function requestEmailChangeAction(
   }
 
   const token = await createEmailChangeToken(user.id, newEmail);
-  const changeUrl = new URL("/auth/email-change", getActionBaseUrl());
+  const baseUrl = await getActionBaseUrl();
+  const changeUrl = new URL("/auth/email-change", baseUrl);
   changeUrl.searchParams.set("token", token);
   await sendEmailChangeVerificationEmail(newEmail, changeUrl.toString());
 
