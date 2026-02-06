@@ -171,6 +171,10 @@ export function MultiGachaDemo() {
   };
 
   const handleRestart = () => {
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
     const initial = buildInitialState();
     setRevealed(initial.revealed);
     setActiveStep(initial.activeStep);
