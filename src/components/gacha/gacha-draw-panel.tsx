@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { Loader2, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
 type DrawResult = {
   cardId: string;
@@ -27,11 +28,22 @@ const RARITY_LABELS: Record<string, string> = {
   UR: "UR",
 };
 
-type Props = {
-  gachaId: string;
+type DrawPanelAppearance = {
+  singleButtonClass?: string;
+  multiButtonClass?: string;
 };
 
-export function GachaDrawPanel({ gachaId }: Props) {
+type Props = {
+  gachaId: string;
+  appearance?: DrawPanelAppearance;
+};
+
+const BASE_BUTTON_CLASS =
+  "flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full px-6 py-3 text-xs uppercase tracking-[0.35em] transition disabled:opacity-60";
+const DEFAULT_SINGLE_ACCENT = "bg-gradient-to-r from-neon-pink to-neon-yellow text-black shadow-neon";
+const DEFAULT_MULTI_ACCENT = "border border-white/20 bg-hall-panel/70 text-white";
+
+export function GachaDrawPanel({ gachaId, appearance }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<DrawResult[]>([]);
@@ -65,6 +77,15 @@ export function GachaDrawPanel({ gachaId }: Props) {
     });
   };
 
+  const singleButtonClass = cn(
+    BASE_BUTTON_CLASS,
+    appearance?.singleButtonClass ?? DEFAULT_SINGLE_ACCENT
+  );
+  const multiButtonClass = cn(
+    BASE_BUTTON_CLASS,
+    appearance?.multiButtonClass ?? DEFAULT_MULTI_ACCENT
+  );
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-3">
@@ -72,7 +93,7 @@ export function GachaDrawPanel({ gachaId }: Props) {
           type="button"
           disabled={pending}
           onClick={() => runDraw(1)}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black shadow-neon disabled:opacity-60"
+          className={singleButtonClass}
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "1回ガチャ"}
         </button>
@@ -80,7 +101,7 @@ export function GachaDrawPanel({ gachaId }: Props) {
           type="button"
           disabled={pending}
           onClick={() => runDraw(10)}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-hall-panel/70 px-6 py-3 text-xs uppercase tracking-[0.35em] text-white disabled:opacity-60"
+          className={multiButtonClass}
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "10連ガチャ"}
         </button>
