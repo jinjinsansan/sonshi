@@ -7,15 +7,13 @@ import { resendVerificationAction, signInAction } from "../actions";
 
 const initialState: AuthActionState = { status: "idle" };
 const resendInitialState: ResendVerificationState = { status: "idle" };
+const primaryButtonClass =
+  "mt-4 w-full rounded-full bg-gradient-to-r from-[#ff2d95] via-[#ff8c3a] to-[#fff65c] py-3 font-display text-sm tracking-[0.35em] text-[#120714] shadow-[0_0_28px_rgba(255,246,92,0.6)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fff65c]/70 disabled:opacity-60";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="mt-4 w-full rounded-full bg-[#ffe347] py-3 font-display text-sm tracking-[0.35em] text-white shadow-[0_0_22px_rgba(255,255,0,0.45)] disabled:opacity-60"
-    >
+    <button type="submit" disabled={pending} className={primaryButtonClass}>
       {pending ? "SIGNING IN" : "SIGN IN"}
     </button>
   );
