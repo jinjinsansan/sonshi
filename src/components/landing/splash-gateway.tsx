@@ -117,20 +117,13 @@ export function SplashGateway() {
   };
 
   return (
-    <div className="fixed inset-0 bg-hall-background text-white">
+    <div className="relative min-h-screen overflow-hidden bg-hall-background text-white">
       <div className="pointer-events-none absolute inset-0 opacity-50">
         <div className="absolute inset-0 bg-hall-grid opacity-35" />
-        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-neon-pink/30 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-neon-blue/30 blur-[100px]" />
+        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-neon-pink/30 blur-[220px]" />
+        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-neon-blue/30 blur-[200px]" />
       </div>
-      <div 
-        className="relative h-full overflow-y-auto overflow-x-hidden"
-        style={{ 
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain'
-        }}
-      >
-        <div className="mx-auto flex min-h-full w-full max-w-md flex-col items-center justify-center px-6 py-10">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-10">
         {phase !== "complete" && (
           <div className="relative flex h-64 w-64 items-center justify-center">
             {/* SONSHI Image */}
@@ -275,7 +268,6 @@ export function SplashGateway() {
             </div>
           </motion.div>
         )}
-        </div>
       </div>
     </div>
   );
