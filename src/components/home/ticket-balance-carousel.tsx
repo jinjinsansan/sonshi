@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TicketBalanceItem } from "@/lib/utils/tickets";
@@ -11,59 +10,30 @@ type TicketBalanceCarouselProps = {
   tickets: TicketBalanceItem[];
 };
 
-function formatTicketCode(code: string) {
-  return code.toUpperCase();
-}
-
-const TICKET_CARD_STYLES: Record<
+const TICKET_CARD_META: Record<
   TicketCode,
   {
-    gradient: string;
-    badge: string;
-    label: string;
-    illustration: string;
+    title: string;
+    subtitle: string;
+    accent: string;
   }
 > = {
-  free: {
-    gradient: "from-[#061430] via-[#0c1f49] to-[#05060e]",
-    badge: "text-neon-blue",
-    label: "LOGIN BONUS",
-    illustration: "/ticket-illustration.svg",
-  },
-  basic: {
-    gradient: "from-[#2a1a02] via-[#3f2607] to-[#0b0502]",
-    badge: "text-amber-200",
-    label: "1階 FLOOR",
-    illustration: "/ticket-illustration-basic.svg",
-  },
-  epic: {
-    gradient: "from-[#2b0014] via-[#430029] to-[#070008]",
-    badge: "text-rose-200",
-    label: "2階 FLOOR",
-    illustration: "/ticket-illustration-epic.svg",
-  },
-  premium: {
-    gradient: "from-[#1c0030] via-[#2f0150] to-[#05000a]",
-    badge: "text-purple-200",
-    label: "3階 FLOOR",
-    illustration: "/ticket-illustration-premium.svg",
-  },
-  ex: {
-    gradient: "from-[#032415] via-[#064030] to-[#010b06]",
-    badge: "text-emerald-200",
-    label: "VIP FLOOR",
-    illustration: "/ticket-illustration-vip.svg",
-  },
+  free: { title: "フリーガチャ", subtitle: "FREE FLOOR", accent: "text-neon-blue" },
+  basic: { title: "1階ガチャ", subtitle: "1ST FLOOR", accent: "text-amber-200" },
+  epic: { title: "2階ガチャ", subtitle: "2ND FLOOR", accent: "text-rose-200" },
+  premium: { title: "3階ガチャ", subtitle: "3RD FLOOR", accent: "text-purple-200" },
+  ex: { title: "VIPガチャ", subtitle: "VIP FLOOR", accent: "text-emerald-200" },
 };
 
-function getTicketTheme(code: string) {
+function getTicketMeta(code: string) {
   const typed = code as TicketCode;
-  return TICKET_CARD_STYLES[typed] ?? {
-    gradient: "from-[#161320] to-[#050107]",
-    badge: "text-zinc-300",
-    label: "TICKET",
-    illustration: "/ticket-illustration.svg",
-  };
+  return (
+    TICKET_CARD_META[typed] ?? {
+      title: "TICKET",
+      subtitle: "FLOOR",
+      accent: "text-white",
+    }
+  );
 }
 
 export function TicketBalanceCarousel({ tickets }: TicketBalanceCarouselProps) {
@@ -126,31 +96,21 @@ export function TicketBalanceCarousel({ tickets }: TicketBalanceCarouselProps) {
         onWheel={handleWheel}
       >
         {tickets.map((ticket) => {
-          const theme = getTicketTheme(ticket.code);
+          const meta = getTicketMeta(ticket.code);
           return (
             <div
               key={ticket.code}
-              className={cn(
-                "relative flex min-h-[120px] min-w-[200px] snap-start items-center justify-between overflow-hidden rounded-3xl border border-white/12 bg-gradient-to-br px-4 py-3",
-                theme.gradient
-              )}
+              className="flex min-h-[72px] min-w-[180px] snap-start items-center justify-between rounded-2xl border border-white/10 bg-black/60 px-4 py-3"
             >
-              <div className="flex flex-col gap-1">
-                <p className={cn("text-[0.55rem] uppercase tracking-[0.5em]", theme.badge)}>
-                  {theme.label}
+              <div className="space-y-1">
+                <p className={cn("text-[0.55rem] uppercase tracking-[0.45em] text-white/50", meta.accent)}>
+                  {meta.subtitle}
                 </p>
-                <p className="text-xs text-white/80">{ticket.name.toUpperCase()}</p>
-                <p className="text-3xl font-display text-white">{ticket.quantity}</p>
-                <p className="text-[0.65rem] text-white/70">{formatTicketCode(ticket.code)} TICKET</p>
+                <p className="text-base font-display text-white">{meta.title}</p>
               </div>
-              <div className="relative h-16 w-28">
-                <Image
-                  src={theme.illustration}
-                  alt={`${ticket.name} ticket`}
-                  fill
-                  sizes="112px"
-                  className="object-contain drop-shadow-[0_18px_25px_rgba(0,0,0,0.45)]"
-                />
+              <div className="text-right">
+                <p className="text-2xl font-display text-white">{ticket.quantity}</p>
+                <p className="text-[0.65rem] text-white/60">枚</p>
               </div>
             </div>
           );

@@ -14,7 +14,7 @@
   <path d="M20 12.5H220C226.351 12.5 231.5 17.6487 231.5 24V41.4658C220.188 41.942 220.188 88.058 231.5 88.5342V106C231.5 112.351 226.351 117.5 220 117.5H20C13.6487 117.5 8.5 112.351 8.5 106V88.5342C19.8122 88.058 19.8122 41.942 8.5 41.4658V24C8.5 17.6487 13.6487 12.5 20 12.5Z" stroke="url(#basicTicketStroke)" stroke-opacity="0.95"/>
   <path d="M165 26H210" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
   <path d="M165 104H210" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
-  <text x="150" y="76" fill="#3B1C00" font-family="'Orbitron','Noto Sans JP',sans-serif" font-size="24" letter-spacing="0.3em" text-anchor="middle">BASIC</text>
+  <text x="150" y="76" fill="#3B1C00" font-family="'Orbitron','Noto Sans JP',sans-serif" font-size="24" letter-spacing="0.28em" text-anchor="middle">1FLOOR</text>
   <path d="M75 32L100 50L75 68L50 50L75 32Z" fill="#fff" fill-opacity="0.12"/>
   <path d="M75 72L95 87L75 102L55 87L75 72Z" fill="#fff" fill-opacity="0.18"/>
   <circle cx="125" cy="26" r="5" fill="#FFFFFF" fill-opacity="0.65"/>

@@ -14,7 +14,7 @@
   <path d="M15 10.5H205C211.351 10.5 216.5 15.6487 216.5 22V37.3446C205.21 37.8285 205.21 82.1715 216.5 82.6554V98C216.5 104.351 211.351 109.5 205 109.5H15C8.64872 109.5 3.5 104.351 3.5 98V82.6554C14.79 82.1715 14.79 37.8285 3.5 37.3446V22C3.5 15.6487 8.64872 10.5 15 10.5Z" stroke="url(#ticketStroke)" stroke-opacity="0.9"/>
   <path d="M152 20H198" stroke="white" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
   <path d="M152 100H198" stroke="white" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
-  <text x="150" y="70" fill="#120714" font-family="'Orbitron', 'Noto Sans JP', sans-serif" font-size="22" letter-spacing="0.25em" text-anchor="middle">TICKET</text>
+  <text x="150" y="70" fill="#120714" font-family="'Orbitron', 'Noto Sans JP', sans-serif" font-size="22" letter-spacing="0.25em" text-anchor="middle">FREE</text>
   <path d="M60 30L80 45L60 60L40 45L60 30Z" fill="#fff" fill-opacity="0.15"/>
   <path d="M60 65L75 77L60 90L45 77L60 65Z" fill="#fff" fill-opacity="0.2"/>
   <circle cx="120" cy="24" r="4" fill="#FFFFFF" fill-opacity="0.65"/>

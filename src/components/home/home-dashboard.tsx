@@ -52,45 +52,9 @@ export function HomeDashboard() {
 
   return (
     <section className="mx-auto w-full max-w-md space-y-10">
-      <header className="relative overflow-hidden rounded-[2.5rem] border border-[#ffd54f]/30 bg-gradient-to-br from-[#15000b] via-[#2d021f] to-[#050006] px-7 py-8 shadow-[0_35px_90px_rgba(0,0,0,0.6)]">
-        <div className="pointer-events-none absolute inset-0 opacity-60">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#ff2d95,transparent_55%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,#fff65c,transparent_60%)]" />
-          <div className="absolute -left-10 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full border border-white/10 blur-3xl" />
-        </div>
-        <div className="relative space-y-4">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-1 text-[10px] uppercase tracking-[0.45em] text-white/80">
-            Gacha Floor
-            <span className="text-neon-yellow">OPEN</span>
-          </p>
-          <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
-            チケットホール
-          </h1>
-          <p className="text-sm text-white/85">
-            パチスロホールの賑わいをそのままに。ネオンの轟きとともに、最新ラインナップと手持ちチケットをチェックしましょう。
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/mypage"
-              className="inline-flex flex-1 items-center justify-center rounded-full bg-black/30 px-4 py-2 text-[11px] uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
-            >
-              マイホール設定
-            </Link>
-            <Link
-              href="/gacha"
-              className="inline-flex flex-1 items-center justify-center rounded-full border border-white/20 px-4 py-2 text-[11px] uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
-            >
-              フロアマップ
-            </Link>
-            <button
-              type="button"
-              className="inline-flex flex-1 items-center justify-center rounded-full bg-gradient-to-r from-[#ff2d95] via-[#ff8c3a] to-[#fff65c] px-4 py-2 text-[11px] uppercase tracking-[0.35em] text-[#120714] shadow-[0_15px_45px_rgba(255,150,60,0.45)]"
-            >
-              チケット購入
-            </button>
-          </div>
-        </div>
-      </header>
+      <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
+        チケットホール
+      </h1>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between text-xs text-zinc-400">
@@ -378,7 +342,7 @@ export function HomeDashboard() {
 
       <Link
         href="/mypage/tickets"
-        className="flex h-14 items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow text-sm uppercase tracking-[0.35em] text-black shadow-neon transition hover:opacity-90"
+        className="flex h-14 items-center justify-center rounded-full bg-[#ffe347] text-sm font-semibold uppercase tracking-[0.35em] text-[#2a1000] transition hover:bg-[#ffef7a]"
       >
         チケット購入へ
       </Link>
