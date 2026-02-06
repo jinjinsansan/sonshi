@@ -90,7 +90,7 @@ export default async function GachaPage() {
 
   return (
     <section className="space-y-10">
-      <div className="space-y-2">
+      <div className="space-y-2 text-center">
         <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
           ガチャホール
         </h1>
@@ -115,7 +115,7 @@ export default async function GachaPage() {
           return (
             <article
               key={floorId}
-              className={`flex items-center justify-between gap-4 rounded-3xl border ${meta.border} bg-gradient-to-br ${meta.gradient} px-5 py-4 shadow-panel-inset`}
+              className={`flex flex-col gap-4 rounded-3xl border ${meta.border} bg-gradient-to-br ${meta.gradient} px-5 py-4 shadow-panel-inset sm:flex-row sm:items-center sm:justify-between`}
             >
               <div className="space-y-2">
                 <p className={`text-xs uppercase tracking-[0.4em] ${meta.badge}`}>{meta.subtitle}</p>
@@ -128,14 +128,10 @@ export default async function GachaPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-3">
-                <div className="text-right text-sm text-white/70">
-                  <p>{match?.ticketLabel ?? "TICKET"}</p>
-                  {match?.priceLabel ? <p>{match.priceLabel}</p> : null}
-                </div>
+              <div className="flex w-full justify-end sm:w-auto">
                 <Link
                   href={`/gacha/${slug}`}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
+                  className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-xs uppercase tracking-[0.35em] text-white shadow-[0_0_30px_rgba(255,246,92,0.25)] transition hover:bg-white/20"
                 >
                   ガチャを回す
                 </Link>
