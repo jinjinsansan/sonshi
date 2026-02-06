@@ -112,7 +112,6 @@ export async function signInAction(
 
   const { token, expiresAt } = await createSession(user.id);
   await setServerSessionCookie(token, expiresAt);
-  await supabase.from("app_users").update({ last_login_at: new Date().toISOString() }).eq("id", user.id);
 
   redirect("/home");
 }

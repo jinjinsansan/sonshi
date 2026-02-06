@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import type { AuthActionState, ResendVerificationState } from "../actions";
 import { resendVerificationAction, signInAction } from "../actions";
@@ -105,6 +107,20 @@ function ResendVerificationForm() {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const prefetch = async () => {
+      try {
+        await router.prefetch("/home");
+      } catch (error) {
+        console.error("Failed to prefetch /home", error);
+      }
+    };
+
+    void prefetch();
+  }, [router]);
+
   return (
     <div className="space-y-6">
       <div>
