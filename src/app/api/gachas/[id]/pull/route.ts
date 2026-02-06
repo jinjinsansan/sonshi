@@ -7,6 +7,8 @@ import { canonicalizeGachaId, gachaIdMatches } from "@/lib/utils/gacha";
 import type { Database } from "@/types/database";
 
 const FREE_USER_EMAIL = "goldbenchan@gmail.com";
+const DEMO_CARD_IMAGE = "/iraira.png";
+const DEMO_CARD_NAME = "デモカード: イライラ尊師";
 
 type DbGacha = Database["public"]["Tables"]["gachas"]["Row"] & {
   ticket_types: Pick<Database["public"]["Tables"]["ticket_types"]["Row"], "id" | "name" | "code"> | null;
@@ -27,6 +29,36 @@ type DrawResult = {
 
 function pickRandom<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
+}
+
+async function ensureDemoCard(serviceSupabase: ReturnType<typeof getSupabaseServiceClient>) {
+  const { data: existing } = await serviceSupabase
+    .from("cards")
+    .select("id, name, rarity, image_url, max_supply, current_supply, is_active")
+    .eq("name", DEMO_CARD_NAME)
+    .limit(1)
+    .maybeSingle();
+
+  if (!existing) {
+    await serviceSupabase.from("cards").insert({
+      name: DEMO_CARD_NAME,
+      rarity: "UR",
+      max_supply: 99999,
+      current_supply: 0,
+      image_url: DEMO_CARD_IMAGE,
+      description: "開発用デモカード（自動投入）",
+      person_name: "尊師",
+      card_style: "illustration",
+      is_active: true,
+    });
+  }
+
+  const { data: cards } = await serviceSupabase
+    .from("cards")
+    .select("id, name, rarity, image_url, max_supply, current_supply, is_active")
+    .eq("is_active", true);
+
+  return cards ?? [];
 }
 
 export async function POST(
@@ -96,13 +128,20 @@ export async function POST(
     return NextResponse.json({ error: cardsError.message }, { status: 500 });
   }
 
-  const availableCards = (cards ?? []).filter((card) => {
+  let availableCards = (cards ?? []).filter((card) => {
     const current = card.current_supply ?? 0;
     return card.max_supply > current;
   });
 
   if (availableCards.length === 0) {
-    return NextResponse.json({ error: "排出可能なカードがありません" }, { status: 400 });
+    if (isFreeUser) {
+      const seeded = await ensureDemoCard(serviceSupabase);
+      availableCards = seeded.filter((card) => (card.max_supply ?? 0) > (card.current_supply ?? 0));
+    }
+
+    if (availableCards.length === 0) {
+      return NextResponse.json({ error: "排出可能なカードがありません" }, { status: 400 });
+    }
   }
 
   const { data: probabilities, error: probabilityError } = await serviceSupabase
