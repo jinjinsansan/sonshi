@@ -1,24 +1,11 @@
 import Link from "next/link";
-import { Sparkles, Video, Zap } from "lucide-react";
+import Image from "next/image";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { canonicalizeGachaId, fetchGachaCatalog } from "@/lib/utils/gacha";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
 import { fetchTicketBalances, type TicketBalanceItem } from "@/lib/utils/tickets";
 
 const RARITY_LABELS = ["N", "R", "SR", "SSR", "UR"];
-
-const CATEGORIES = [
-  { value: "pickup", label: "PICK UP", description: "今週の演出強化ガチャ" },
-  { value: "limited", label: "LIMITED", description: "期間限定ライン" },
-  { value: "ex", label: "EX", description: "最高峰のEXホール" },
-];
-
-const ANIMATIONS = [
-  { key: "burst", name: "NEON BURST", duration: 4, note: "極彩色の一斉点灯" },
-  { key: "warp", name: "WARP GATE", duration: 6, note: "ワープ映像から尊師登場" },
-  { key: "impact", name: "IMPACT REEL", duration: 5, note: "メーターMAX演出" },
-  { key: "rush", name: "SONSHI RUSH", duration: 8, note: "連打系カットイン" },
-];
 
 const FALLBACK_TICKETS: TicketBalanceItem[] = [
   { code: "free", name: "フリーチケット", quantity: 0, colorToken: "neon-blue", sortOrder: 0 },
@@ -33,35 +20,99 @@ function formatRarity(range: [number, number]) {
   return `${label(range[0])}〜${label(range[1])}`;
 }
 
+const FLOOR_ORDER = ["free", "basic", "epic", "premium", "ex"];
+
+function getIllustrationSrc(code: string) {
+  switch (code) {
+    case "free":
+      return "/ticket-illustration.svg";
+    case "basic":
+      return "/ticket-illustration-basic.svg";
+    case "epic":
+      return "/ticket-illustration-epic.svg";
+    case "premium":
+      return "/ticket-illustration-premium.svg";
+    case "ex":
+      return "/ticket-illustration-vip.svg";
+    default:
+      return "/ticket-illustration.svg";
+  }
+}
+
+const FLOOR_META: Record<
+  string,
+  {
+    badge: string;
+    title: string;
+    subtitle: string;
+    gradient: string;
+    accent: string;
+    description: string;
+  }
+> = {
+  free: {
+    badge: "text-neon-blue",
+    title: "フリーガチャ",
+    subtitle: "FREE FLOOR",
+    gradient: "from-[#061430] via-[#0c1f49] to-[#05060e]",
+    accent: "text-neon-blue",
+    description: "ログインボーナスで入場できる定番フロア。",
+  },
+  basic: {
+    badge: "text-amber-200",
+    title: "1階ガチャ",
+    subtitle: "1ST FLOOR",
+    gradient: "from-[#2a1a02] via-[#3f2607] to-[#0b0502]",
+    accent: "text-amber-200",
+    description: "スタンダードな演出が味わえる基本フロア。",
+  },
+  epic: {
+    badge: "text-rose-200",
+    title: "2階ガチャ",
+    subtitle: "2ND FLOOR",
+    gradient: "from-[#2b0014] via-[#430029] to-[#070008]",
+    accent: "text-rose-200",
+    description: "エピック演出が連続する上級フロア。",
+  },
+  premium: {
+    badge: "text-purple-200",
+    title: "3階ガチャ",
+    subtitle: "3RD FLOOR",
+    gradient: "from-[#1c0030] via-[#2f0150] to-[#05000a]",
+    accent: "text-purple-200",
+    description: "プレミアム演出に特化した上階フロア。",
+  },
+  ex: {
+    badge: "text-emerald-200",
+    title: "VIPガチャ",
+    subtitle: "VIP FLOOR",
+    gradient: "from-[#032415] via-[#064030] to-[#010b06]",
+    accent: "text-emerald-200",
+    description: "最高峰のVIP演出が堪能できる最上階。",
+  },
+};
+
 export default async function GachaPage() {
   const [catalog, ticketBalances] = await Promise.all([
     fetchGachaCatalog().catch(() => GACHA_DEFINITIONS),
     fetchTicketBalances().catch(() => FALLBACK_TICKETS),
   ]);
   const items = catalog.length > 0 ? catalog : GACHA_DEFINITIONS;
-  const featured = items.filter((item) => item.featuredNote).slice(0, 3);
   const tickets = ticketBalances.length > 0 ? ticketBalances : FALLBACK_TICKETS;
+
+  const floorCards = FLOOR_ORDER.map((floorId) => {
+    const match = items.find((item) => canonicalizeGachaId(item.id) === floorId) ?? null;
+    const slug = match ? canonicalizeGachaId(match.id) ?? match.id : floorId;
+    return { floorId, match, slug };
+  });
 
   return (
     <section className="space-y-10">
-      <header className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.6em] text-neon-blue">GACHA CONTROL</p>
-        <div className="space-y-2">
-          <h1 className="font-display text-4xl text-white">ガチャ演出ハブ</h1>
-          <p className="text-sm text-zinc-300">
-            カテゴリ別の演出強化、提供割合、スキップ設定を確認してからホールに挑みましょう。
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.35em] text-white/70">
-          <span className="rounded-full border border-white/20 px-3 py-1">演出表</span>
-          <span className="rounded-full border border-white/20 px-3 py-1">提供割合</span>
-          <Link href="/menu" className="rounded-full border border-white/20 px-3 py-1 text-neon-yellow">
-            チケット購入
-          </Link>
-        </div>
-      </header>
+      <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
+        ガチャホール
+      </h1>
 
-      <section className="space-y-3 rounded-3xl border border-white/10 bg-black/25 px-5 py-5">
+      <section className="space-y-3 rounded-3xl border border-white/10 bg-black/30 px-5 py-5">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-neon-yellow">
           <span>Tickets</span>
           <Link href="/mypage/tickets" className="text-[11px] text-neon-blue">
@@ -72,161 +123,69 @@ export default async function GachaPage() {
       </section>
 
       <section className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          {CATEGORIES.map((category) => (
-            <div
-              key={category.value}
-              className="flex flex-1 min-w-[150px] flex-col gap-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3"
+        {floorCards.map(({ floorId, match, slug }) => {
+          const meta = FLOOR_META[floorId];
+          if (!meta) return null;
+          return (
+            <article
+              key={floorId}
+              className={`flex flex-col gap-5 rounded-3xl border border-white/12 bg-gradient-to-br ${meta.gradient} px-6 py-5 shadow-panel-inset`}
             >
-              <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">{category.label}</p>
-              <p className="text-xs text-zinc-400">{category.description}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-4">
-          {featured.map((item) => {
-            const slug = canonicalizeGachaId(item.id) ?? item.id;
-            return (
-              <article
-                key={item.id}
-                className="rounded-3xl border border-white/10 bg-black/40 p-6 shadow-[0_25px_45px_rgba(0,0,0,0.5)]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">FEATURED</p>
-                    <h2 className="font-display text-2xl text-white">{item.name}ガチャ</h2>
-                    <p className="text-sm text-zinc-300">{item.description}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.35em] text-neon-yellow">
-                    <Sparkles className="h-4 w-4" /> {item.featuredNote}
-                  </span>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-300">
-                  <span>{item.ticketLabel}</span>
-                  <span>|</span>
-                  <span>{item.priceLabel || "TICKET"}</span>
-                  <span>|</span>
-                  <span>{formatRarity(item.rarityRange)}</span>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link
-                    href={`/gacha/${slug}`}
-                    className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
-                  >
-                    1回ガチャ
-                  </Link>
-                  <Link
-                    href="/gacha/multi"
-                    className="rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80"
-                  >
-                    10連ガチャ
-                  </Link>
-                  <Link
-                    href={`/gacha/${slug}#rates`}
-                    className="rounded-full border border-transparent px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 underline-offset-4 hover:text-white hover:underline"
-                  >
-                    提供割合
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="space-y-4" id="lineup">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">All Lineup</p>
-            <h3 className="font-display text-2xl text-white">全ガチャ一覧</h3>
-          </div>
-          <Link href="/collection" className="text-xs uppercase tracking-[0.35em] text-neon-blue">
-            図鑑で確認
-          </Link>
-        </div>
-        <div className="space-y-4">
-          {items.map((item) => {
-            const slug = canonicalizeGachaId(item.id) ?? item.id;
-            return (
-              <article
-                key={item.id}
-                className={`relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${item.gradient} p-6 shadow-panel-inset`}
-              >
+              <div className="flex flex-col gap-2">
+                <p className={`text-[0.55rem] uppercase tracking-[0.45em] ${meta.badge}`}>{meta.subtitle}</p>
                 <div className="flex items-center justify-between">
-                  <h4 className="font-display text-xl text-white">{item.name}ガチャ</h4>
-                  <span className="text-xs uppercase tracking-[0.3em] text-neon-yellow">
-                    {formatRarity(item.rarityRange)}
+                  <h2 className="font-display text-2xl text-white">{meta.title}</h2>
+                  <span className="text-xs uppercase tracking-[0.35em] text-white/80">
+                    {match ? formatRarity(match.rarityRange) : "---"}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-zinc-200">
-                  {item.description || "ネオンホールのラインナップです。"}
-                </p>
-                <div className="mt-4 flex items-center justify-between text-xs text-zinc-300">
-                  <span>{item.ticketLabel}</span>
-                  <span>{item.priceLabel || "TICKET"}</span>
+                <p className="text-sm text-white/75">{match?.description || meta.description}</p>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-sm text-white/70">
+                  <p>{match?.ticketLabel ?? "TICKET"}</p>
+                  <p>{match?.priceLabel ?? ""}</p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="flex items-baseline gap-2">
                   <Link
                     href={`/gacha/${slug}`}
-                    className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
+                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
                   >
-                    1回ガチャ
-                  </Link>
-                  <Link
-                    href="/gacha/multi"
-                    className="rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80"
-                  >
-                    10連ガチャ
+                    ガチャへ
                   </Link>
                   <Link
                     href={`/gacha/${slug}#rates`}
-                    className="rounded-full border border-transparent px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 underline-offset-4 hover:text-white hover:underline"
+                    className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80"
                   >
                     提供割合
                   </Link>
                 </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <article className="rounded-3xl border border-white/10 bg-black/40 p-6">
-          <div className="flex items-center gap-2 text-base text-white">
-            <Video className="h-5 w-5 text-neon-blue" /> 演出バリエーション
-          </div>
-          <p className="mt-2 text-sm text-zinc-400">次期アップデートで演出選択を段階的に解放予定です。</p>
-          <div className="mt-4 space-y-3">
-            {ANIMATIONS.map((animation) => (
-              <div
-                key={animation.key}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm"
-              >
-                <div>
-                  <p className="text-white">{animation.name}</p>
-                  <p className="text-xs text-zinc-400">{animation.note}</p>
-                </div>
-                <span className="text-xs text-zinc-300">{animation.duration}s</span>
               </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-white/10 bg-black/40 p-6">
-          <div className="flex items-center gap-2 text-base text-white">
-            <Zap className="h-5 w-5 text-neon-yellow" /> 即時スキップ設定
-          </div>
-          <p className="mt-2 text-sm text-zinc-300">
-            次回アップデートで演出スキップトグルを実装予定。チャージ後すぐ結果を見たい方向けの高速モードです。
-          </p>
-          <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-            <span className="text-xs uppercase tracking-[0.4em] text-zinc-400">STATUS</span>
-            <span className="text-sm text-neon-yellow">COMING SOON</span>
-          </div>
-        </article>
+              <div className="flex items-center justify-between">
+                <div className="relative h-16 w-32">
+                  <Image
+                    src={getIllustrationSrc(floorId)}
+                    alt={`${meta.title} ticket`}
+                    fill
+                    sizes="128px"
+                    className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.45)]"
+                  />
+                </div>
+                {match?.featuredNote ? (
+                  <span className="text-xs uppercase tracking-[0.3em] text-neon-yellow">{match.featuredNote}</span>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
       </section>
+
+      <Link
+        href="/purchase"
+        className="flex h-14 items-center justify-center rounded-full bg-[#ffe347] text-sm font-semibold uppercase tracking-[0.35em] text-[#2a1000] transition hover:bg-[#ffef7a]"
+      >
+        チケット購入へ
+      </Link>
     </section>
   );
 }

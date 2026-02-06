@@ -997,6 +997,18 @@ export type Database = {
           remaining_quantity: number;
         }[];
       };
+      get_ticket_balances: {
+        Args: {
+          p_user_id: string;
+        };
+        Returns: {
+          code: string | null;
+          name: string | null;
+          color: string | null;
+          sort_order: number | null;
+          quantity: number | null;
+        }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

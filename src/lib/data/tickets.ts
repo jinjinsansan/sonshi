@@ -1,4 +1,5 @@
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
+import type { Database } from "@/types/database";
 import type { TicketBalanceItem } from "@/lib/utils/tickets";
 
 export const DEFAULT_TICKET_BALANCES: TicketBalanceItem[] = [
@@ -15,36 +16,21 @@ export async function loadTicketBalances(userId?: string | null): Promise<Ticket
   }
 
   const supabase = getSupabaseServiceClient();
+  type TicketBalanceRow = Database["public"]["Functions"]["get_ticket_balances"]["Returns"][number];
 
-  const { data: ticketTypes, error: ticketTypeError } = await supabase
-    .from("ticket_types")
-    .select("id, name, code, color, sort_order")
-    .order("sort_order", { ascending: true });
+  const { data, error } = await supabase.rpc("get_ticket_balances", {
+    p_user_id: userId,
+  });
 
-  if (ticketTypeError || !ticketTypes || ticketTypes.length === 0) {
+  if (error || !data || data.length === 0) {
     return DEFAULT_TICKET_BALANCES;
   }
 
-  const { data: balances, error: balanceError } = await supabase
-    .from("user_tickets")
-    .select("ticket_type_id, quantity")
-    .eq("user_id", userId);
-
-  if (balanceError) {
-    return DEFAULT_TICKET_BALANCES;
-  }
-
-  const quantityByType = new Map(
-    (balances ?? []).map((item) => [item.ticket_type_id, item.quantity ?? 0])
-  );
-
-  const mapped = ticketTypes.map((type, index) => ({
-    code: type.code,
-    name: type.name,
-    colorToken: type.color,
-    sortOrder: type.sort_order ?? index,
-    quantity: quantityByType.get(type.id) ?? 0,
+  return (data as TicketBalanceRow[]).map((row, index) => ({
+    code: row.code ?? "",
+    name: row.name ?? "",
+    colorToken: row.color,
+    sortOrder: row.sort_order ?? index,
+    quantity: row.quantity ?? 0,
   }));
-
-  return mapped.length > 0 ? mapped : DEFAULT_TICKET_BALANCES;
 }

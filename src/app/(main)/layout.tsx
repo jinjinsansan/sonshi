@@ -15,28 +15,34 @@ const tabs: TabBarItem[] = [
   { label: "MENU", href: "/menu", icon: "menu" },
 ];
 
+async function loadMaintenanceSetting() {
+  const supabase = getSupabaseServiceClient();
+  const { data } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "maintenance")
+    .maybeSingle();
+  return (data?.value as { enabled?: boolean; message?: string } | null) ?? null;
+}
+
 type MainLayoutProps = {
   children: ReactNode;
 };
 
 export default async function MainLayout({ children }: MainLayoutProps) {
-  const [user, maintenanceValue] = await Promise.all([
-    getServerAuthUser(),
-    (async () => {
-      const supabase = getSupabaseServiceClient();
-      const { data } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "maintenance")
-        .maybeSingle();
-      return (data?.value as { enabled?: boolean; message?: string } | null) ?? null;
-    })(),
+  const userPromise = getServerAuthUser();
+  const maintenancePromise = loadMaintenanceSetting();
+  const snapshotPromise = userPromise.then((resolvedUser) => loadMainAppSnapshot(resolvedUser?.id));
+
+  const [user, maintenanceValue, mainSnapshot] = await Promise.all([
+    userPromise,
+    maintenancePromise,
+    snapshotPromise,
   ]);
+
   if (!user) {
     redirect("/login");
   }
-
-  const mainSnapshot = await loadMainAppSnapshot(user.id);
 
   return (
     <div className="fixed inset-0 bg-hall-background text-white">

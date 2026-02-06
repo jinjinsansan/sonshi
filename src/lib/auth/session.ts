@@ -46,10 +46,16 @@ async function fetchSession(token: string): Promise<SessionRecord | null> {
 
   if (!data) return null;
 
-  await supabase
-    .from("auth_sessions")
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq("id", data.id);
+  void (async () => {
+    try {
+      await supabase
+        .from("auth_sessions")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", data.id);
+    } catch (error) {
+      console.error("Failed to update session heartbeat", error);
+    }
+  })();
 
   return data as SessionRecord;
 }

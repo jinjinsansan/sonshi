@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { TICKET_THEMES, type TicketCode } from "@/constants/tickets";
 import { buildGachaSearchKey, canonicalizeGachaId } from "@/lib/utils/gacha";
@@ -48,19 +49,27 @@ function mapDbToDefinition(gacha: DbGacha) {
   } satisfies (typeof GACHA_DEFINITIONS)[number];
 }
 
+const cachedActiveGachaDefinitions = unstable_cache(
+  async () => {
+    const supabase = getSupabaseServiceClient();
+
+    const { data, error } = await supabase
+      .from("gachas")
+      .select("*, ticket_types(name, code, color)")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      return GACHA_DEFINITIONS;
+    }
+
+    const mapped = ((data ?? []) as DbGacha[]).map(mapDbToDefinition);
+    return mapped.length > 0 ? mapped : GACHA_DEFINITIONS;
+  },
+  ["active-gacha-definitions"],
+  { revalidate: 60 }
+);
+
 export async function loadActiveGachaDefinitions() {
-  const supabase = getSupabaseServiceClient();
-
-  const { data, error } = await supabase
-    .from("gachas")
-    .select("*, ticket_types(name, code, color)")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    return GACHA_DEFINITIONS;
-  }
-
-  const mapped = ((data ?? []) as DbGacha[]).map(mapDbToDefinition);
-  return mapped.length > 0 ? mapped : GACHA_DEFINITIONS;
+  return cachedActiveGachaDefinitions();
 }
