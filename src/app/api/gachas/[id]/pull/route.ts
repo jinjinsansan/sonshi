@@ -6,6 +6,8 @@ import { isRarityAtOrBelow } from "@/lib/gacha/rarity";
 import { canonicalizeGachaId, gachaIdMatches } from "@/lib/utils/gacha";
 import type { Database } from "@/types/database";
 
+const FREE_USER_EMAIL = "goldbenchan@gmail.com";
+
 type DbGacha = Database["public"]["Tables"]["gachas"]["Row"] & {
   ticket_types: Pick<Database["public"]["Tables"]["ticket_types"]["Row"], "id" | "name" | "code"> | null;
 };
@@ -40,6 +42,8 @@ export async function POST(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const isFreeUser = user.email?.toLowerCase() === FREE_USER_EMAIL;
 
   const serviceSupabase = getSupabaseServiceClient();
 
@@ -79,7 +83,7 @@ export async function POST(
     return NextResponse.json({ error: balanceError.message }, { status: 500 });
   }
 
-  if (!balance || (balance.quantity ?? 0) < repeat) {
+  if (!isFreeUser && (!balance || (balance.quantity ?? 0) < repeat)) {
     return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
   }
 
@@ -187,14 +191,16 @@ export async function POST(
     });
   }
 
-  const newQuantity = (balance.quantity ?? 0) - repeat;
-  const { error: ticketUpdateError } = await serviceSupabase
-    .from("user_tickets")
-    .update({ quantity: newQuantity })
-    .eq("id", balance.id);
+  if (!isFreeUser) {
+    const newQuantity = (balance?.quantity ?? 0) - repeat;
+    const { error: ticketUpdateError } = await serviceSupabase
+      .from("user_tickets")
+      .update({ quantity: newQuantity })
+      .eq("id", balance?.id ?? "");
 
-  if (ticketUpdateError) {
-    return NextResponse.json({ error: ticketUpdateError.message }, { status: 500 });
+    if (ticketUpdateError) {
+      return NextResponse.json({ error: ticketUpdateError.message }, { status: 500 });
+    }
   }
 
   for (const [cardId, used] of usageMap.entries()) {
@@ -242,6 +248,6 @@ export async function POST(
   return NextResponse.json({
     ticket: gacha.ticket_types?.name ?? gacha.name,
     results,
-    remaining: newQuantity,
+    remaining: isFreeUser ? balance?.quantity ?? repeat : (balance?.quantity ?? 0) - repeat,
   });
 }

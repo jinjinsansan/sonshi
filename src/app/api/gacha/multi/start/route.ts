@@ -7,6 +7,8 @@ import { isRarityAtOrBelow } from "@/lib/gacha/rarity";
 import { canonicalizeGachaId, gachaIdMatches } from "@/lib/utils/gacha";
 import type { Database } from "@/types/database";
 
+const FREE_USER_EMAIL = "goldbenchan@gmail.com";
+
 type DbGacha = Database["public"]["Tables"]["gachas"]["Row"] & {
   ticket_types: Pick<Database["public"]["Tables"]["ticket_types"]["Row"], "id" | "name" | "code"> | null;
 };
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const isFreeUser = user.email?.toLowerCase() === FREE_USER_EMAIL;
 
   const body = await request.json().catch(() => ({}));
   const requestedGacha = typeof body.gachaId === "string" ? body.gachaId : body.ticketCode;
@@ -88,8 +92,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: balanceError.message }, { status: 500 });
   }
 
-  if (!balance || (balance.quantity ?? 0) < totalPulls) {
+  const originalBalance = balance?.quantity ?? 0;
+
+  if (!isFreeUser && (!balance || originalBalance < totalPulls)) {
     return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
+  }
+
+  if (isFreeUser && originalBalance < totalPulls) {
+    const padded = Math.max(originalBalance, totalPulls);
+    await serviceSupabase.from("user_tickets").upsert(
+      {
+        id: balance?.id,
+        user_id: user.id,
+        ticket_type_id: gacha.ticket_type_id,
+        quantity: padded,
+      },
+      { onConflict: "user_id,ticket_type_id" }
+    );
   }
 
   const { data: cards, error: cardsError } = await serviceSupabase
@@ -225,6 +244,18 @@ export async function POST(request: NextRequest) {
   const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
   if (!payload?.session_id) {
     return NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 });
+  }
+
+  if (isFreeUser) {
+    await serviceSupabase.from("user_tickets").upsert(
+      {
+        id: balance?.id,
+        user_id: user.id,
+        ticket_type_id: gacha.ticket_type_id,
+        quantity: originalBalance,
+      },
+      { onConflict: "user_id,ticket_type_id" }
+    );
   }
 
   return NextResponse.json({
