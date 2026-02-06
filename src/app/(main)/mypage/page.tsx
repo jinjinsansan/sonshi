@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LoginBonusCard } from "@/components/home/login-bonus-card";
+import { LoginBonusCardClient } from "@/components/home/login-bonus-card-client";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
 import { GachaHistory } from "@/components/gacha/gacha-history";
 import { getServerAuthUser } from "@/lib/auth/session";
@@ -158,7 +158,7 @@ export default async function MyPage() {
 
       <section className="space-y-3">
         <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Login Bonus</p>
-        <LoginBonusCard />
+        <LoginBonusCardClient />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">

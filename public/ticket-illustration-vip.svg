@@ -1,0 +1,22 @@
+<svg width="260" height="150" viewBox="0 0 260 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="vipTicketBody" x1="0" y1="0" x2="260" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00D084"/>
+      <stop offset="0.5" stop-color="#00BFA5"/>
+      <stop offset="1" stop-color="#00A8FF"/>
+    </linearGradient>
+    <linearGradient id="vipTicketStroke" x1="0" y1="0" x2="260" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+  <path d="M30 18H230C236.627 18 242 23.3726 242 30V54C230 54 230 104 242 104V128C242 134.627 236.627 140 230 140H30C23.3726 140 18 134.627 18 128V104C30 104 30 54 18 54V30C18 23.3726 23.3726 18 30 18Z" fill="url(#vipTicketBody)"/>
+  <path d="M30 18.5H230C236.351 18.5 241.5 23.6487 241.5 30V53.985C230.097 54.466 230.097 103.534 241.5 104.015V128C241.5 134.351 236.351 139.5 230 139.5H30C23.6487 139.5 18.5 134.351 18.5 128V104.015C29.903 103.534 29.903 54.466 18.5 53.985V30C18.5 23.6487 23.6487 18.5 30 18.5Z" stroke="url(#vipTicketStroke)" stroke-opacity="0.95"/>
+  <path d="M190 38H236" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
+  <path d="M190 130H236" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
+  <text x="165" y="86" fill="#001F14" font-family="'Orbitron','Noto Sans JP',sans-serif" font-size="24" letter-spacing="0.3em" text-anchor="middle">VIP</text>
+  <path d="M100 44L130 67L100 90L70 67L100 44Z" fill="#fff" fill-opacity="0.15"/>
+  <path d="M100 92L125 112L100 132L75 112L100 92Z" fill="#fff" fill-opacity="0.23"/>
+  <circle cx="145" cy="40" r="5" fill="#FFFFFF" fill-opacity="0.65"/>
+  <circle cx="145" cy="132" r="5" fill="#FFFFFF" fill-opacity="0.45"/>
+</svg>

@@ -32,10 +32,30 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   const claimed = data ? new Date(data.claimed_at) >= windowStart : false;
+
+  let quantity = 0;
+  const { data: ticketType } = await serviceSupabase
+    .from("ticket_types")
+    .select("id")
+    .eq("code", "free")
+    .limit(1)
+    .maybeSingle();
+
+  if (ticketType) {
+    const { data: ticketBalance } = await serviceSupabase
+      .from("user_tickets")
+      .select("quantity")
+      .eq("user_id", user.id)
+      .eq("ticket_type_id", ticketType.id)
+      .limit(1)
+      .maybeSingle();
+    quantity = ticketBalance?.quantity ?? 0;
+  }
   return NextResponse.json({
     claimed,
     nextResetAt: nextResetAt.toISOString(),
     windowStart: windowStart.toISOString(),
+    quantity,
   });
 }
 

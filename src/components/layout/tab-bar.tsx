@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, Images, Sparkles, Share2, Menu as MenuIcon } from "lucide-react";
+import { Tickets, Images, Sparkles, Share2, Menu as MenuIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const iconMap = {
-  home: Crown,
+  ticket: Tickets,
   collection: Images,
   gacha: Sparkles,
   social: Share2,

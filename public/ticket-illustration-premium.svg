@@ -1,0 +1,22 @@
+<svg width="255" height="145" viewBox="0 0 255 145" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="premiumTicketBody" x1="0" y1="0" x2="255" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B345FF"/>
+      <stop offset="0.5" stop-color="#874BFF"/>
+      <stop offset="1" stop-color="#4F69FF"/>
+    </linearGradient>
+    <linearGradient id="premiumTicketStroke" x1="0" y1="0" x2="255" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+  <path d="M26 16H229C235.627 16 241 21.3726 241 28V50C229 50 229 98 241 98V120C241 126.627 235.627 132 229 132H26C19.3726 132 14 126.627 14 120V98C26 98 26 50 14 50V28C14 21.3726 19.3726 16 26 16Z" fill="url(#premiumTicketBody)"/>
+  <path d="M26 16.5H229C235.351 16.5 240.5 21.6487 240.5 28V49.7615C229.115 50.2445 229.115 97.7555 240.5 98.2385V120C240.5 126.351 235.351 131.5 229 131.5H26C19.6487 131.5 14.5 126.351 14.5 120V98.2385C25.885 97.7555 25.885 50.2445 14.5 49.7615V28C14.5 21.6487 19.6487 16.5 26 16.5Z" stroke="url(#premiumTicketStroke)" stroke-opacity="0.95"/>
+  <path d="M184 34H230" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
+  <path d="M184 118H230" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
+  <text x="160" y="80" fill="#140028" font-family="'Orbitron','Noto Sans JP',sans-serif" font-size="24" letter-spacing="0.28em" text-anchor="middle">PREM</text>
+  <path d="M90 40L118 62L90 84L62 62L90 40Z" fill="#fff" fill-opacity="0.15"/>
+  <path d="M90 86L113 105L90 124L67 105L90 86Z" fill="#fff" fill-opacity="0.22"/>
+  <circle cx="135" cy="36" r="5" fill="#FFFFFF" fill-opacity="0.65"/>
+  <circle cx="135" cy="122" r="5" fill="#FFFFFF" fill-opacity="0.45"/>
+</svg>

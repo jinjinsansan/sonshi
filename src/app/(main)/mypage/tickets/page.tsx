@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LoginBonusCard } from "@/components/home/login-bonus-card";
+import { LoginBonusCardClient } from "@/components/home/login-bonus-card-client";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
 import { getServerAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
@@ -138,7 +138,7 @@ export default async function TicketPage() {
         <TicketBalanceCarousel tickets={tickets} />
       </div>
 
-      <LoginBonusCard />
+      <LoginBonusCardClient />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

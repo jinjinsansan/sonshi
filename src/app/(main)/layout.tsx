@@ -8,7 +8,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { Toaster } from "sonner";
 
 const tabs: TabBarItem[] = [
-  { label: "HOME", href: "/home", icon: "home" },
+  { label: "TICKET", href: "/home", icon: "ticket" },
   { label: "CARD", href: "/collection", icon: "collection" },
   { label: "GACHA", href: "/gacha", icon: "gacha", primary: true },
   { label: "SOCIAL", href: "/social", icon: "social" },
