@@ -104,7 +104,7 @@ export function TicketBalanceCarousel({ tickets }: TicketBalanceCarouselProps) {
         <button
           type="button"
           aria-label="前のチケット"
-          className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-hall-panel/80 p-1.5 text-white shadow-lg backdrop-blur"
+          className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-hall-panel/95 p-1.5 text-white shadow-lg"
           onClick={() => scrollByAmount("left")}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -115,7 +115,7 @@ export function TicketBalanceCarousel({ tickets }: TicketBalanceCarouselProps) {
         <button
           type="button"
           aria-label="次のチケット"
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-hall-panel/80 p-1.5 text-white shadow-lg backdrop-blur"
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-hall-panel/95 p-1.5 text-white shadow-lg"
           onClick={() => scrollByAmount("right")}
         >
           <ChevronRight className="h-4 w-4" />

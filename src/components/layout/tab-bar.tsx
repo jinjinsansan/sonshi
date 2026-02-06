@@ -31,7 +31,7 @@ export function TabBar({ items }: TabBarProps) {
 
   return (
     <nav className="fixed inset-x-0 bottom-4 sm:bottom-6 md:bottom-8 z-50 px-4">
-      <div className="neon-tabbar mx-auto flex w-full max-w-[420px] items-center gap-3 rounded-full px-4 py-2 text-sm backdrop-blur-2xl">
+      <div className="neon-tabbar mx-auto flex w-full max-w-[420px] items-center gap-3 rounded-full px-4 py-2 text-sm">
         {items.map((item) => {
           const Icon = iconMap[item.icon];
           if (!Icon) return null;
