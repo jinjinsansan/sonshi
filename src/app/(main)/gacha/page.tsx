@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { canonicalizeGachaId, fetchGachaCatalog } from "@/lib/utils/gacha";
 import { TicketBalanceCarousel } from "@/components/home/ticket-balance-carousel";
@@ -22,23 +21,6 @@ function formatRarity(range: [number, number]) {
 
 const FLOOR_ORDER = ["free", "basic", "epic", "premium", "ex"];
 
-function getIllustrationSrc(code: string) {
-  switch (code) {
-    case "free":
-      return "/ticket-illustration.svg";
-    case "basic":
-      return "/ticket-illustration-basic.svg";
-    case "epic":
-      return "/ticket-illustration-epic.svg";
-    case "premium":
-      return "/ticket-illustration-premium.svg";
-    case "ex":
-      return "/ticket-illustration-vip.svg";
-    default:
-      return "/ticket-illustration.svg";
-  }
-}
-
 const FLOOR_META: Record<
   string,
   {
@@ -46,7 +28,7 @@ const FLOOR_META: Record<
     title: string;
     subtitle: string;
     gradient: string;
-    accent: string;
+    border: string;
     description: string;
   }
 > = {
@@ -55,7 +37,7 @@ const FLOOR_META: Record<
     title: "フリーガチャ",
     subtitle: "FREE FLOOR",
     gradient: "from-[#061430] via-[#0c1f49] to-[#05060e]",
-    accent: "text-neon-blue",
+    border: "border-white/10",
     description: "ログインボーナスで入場できる定番フロア。",
   },
   basic: {
@@ -63,7 +45,7 @@ const FLOOR_META: Record<
     title: "1階ガチャ",
     subtitle: "1ST FLOOR",
     gradient: "from-[#2a1a02] via-[#3f2607] to-[#0b0502]",
-    accent: "text-amber-200",
+    border: "border-white/12",
     description: "スタンダードな演出が味わえる基本フロア。",
   },
   epic: {
@@ -71,7 +53,7 @@ const FLOOR_META: Record<
     title: "2階ガチャ",
     subtitle: "2ND FLOOR",
     gradient: "from-[#2b0014] via-[#430029] to-[#070008]",
-    accent: "text-rose-200",
+    border: "border-white/12",
     description: "エピック演出が連続する上級フロア。",
   },
   premium: {
@@ -79,7 +61,7 @@ const FLOOR_META: Record<
     title: "3階ガチャ",
     subtitle: "3RD FLOOR",
     gradient: "from-[#1c0030] via-[#2f0150] to-[#05000a]",
-    accent: "text-purple-200",
+    border: "border-white/12",
     description: "プレミアム演出に特化した上階フロア。",
   },
   ex: {
@@ -87,7 +69,7 @@ const FLOOR_META: Record<
     title: "VIPガチャ",
     subtitle: "VIP FLOOR",
     gradient: "from-[#032415] via-[#064030] to-[#010b06]",
-    accent: "text-emerald-200",
+    border: "border-white/12",
     description: "最高峰のVIP演出が堪能できる最上階。",
   },
 };
@@ -108,9 +90,12 @@ export default async function GachaPage() {
 
   return (
     <section className="space-y-10">
-      <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
-        ガチャホール
-      </h1>
+      <div className="space-y-2">
+        <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
+          ガチャホール
+        </h1>
+        <p className="text-sm text-white/70">尊師と仲間たちのカードをコレクションしよう</p>
+      </div>
 
       <section className="space-y-3 rounded-3xl border border-white/10 bg-black/30 px-5 py-5">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-neon-yellow">
@@ -126,66 +111,40 @@ export default async function GachaPage() {
         {floorCards.map(({ floorId, match, slug }) => {
           const meta = FLOOR_META[floorId];
           if (!meta) return null;
+          const rarityLabel = match ? formatRarity(match.rarityRange) : "---";
           return (
             <article
               key={floorId}
-              className={`flex flex-col gap-5 rounded-3xl border border-white/12 bg-gradient-to-br ${meta.gradient} px-6 py-5 shadow-panel-inset`}
+              className={`flex items-center justify-between gap-4 rounded-3xl border ${meta.border} bg-gradient-to-br ${meta.gradient} px-5 py-4 shadow-panel-inset`}
             >
-              <div className="flex flex-col gap-2">
-                <p className={`text-[0.55rem] uppercase tracking-[0.45em] ${meta.badge}`}>{meta.subtitle}</p>
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-2xl text-white">{meta.title}</h2>
-                  <span className="text-xs uppercase tracking-[0.35em] text-white/80">
-                    {match ? formatRarity(match.rarityRange) : "---"}
+              <div className="space-y-2">
+                <p className={`text-xs uppercase tracking-[0.4em] ${meta.badge}`}>{meta.subtitle}</p>
+                <h3 className="font-display text-xl text-white">{meta.title}</h3>
+                <p className="text-[0.75rem] text-white/75">{match?.description || meta.description}</p>
+                <div className="flex gap-2 text-[0.65rem] text-white/80">
+                  <span className="rounded-full border border-white/20 px-3 py-1 uppercase tracking-[0.35em]">{rarityLabel}</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em]">
+                    {meta.subtitle}
                   </span>
                 </div>
-                <p className="text-sm text-white/75">{match?.description || meta.description}</p>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-sm text-white/70">
+              <div className="flex flex-col items-end gap-3">
+                <div className="text-right text-sm text-white/70">
                   <p>{match?.ticketLabel ?? "TICKET"}</p>
-                  <p>{match?.priceLabel ?? ""}</p>
+                  {match?.priceLabel ? <p>{match.priceLabel}</p> : null}
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <Link
-                    href={`/gacha/${slug}`}
-                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
-                  >
-                    ガチャへ
-                  </Link>
-                  <Link
-                    href={`/gacha/${slug}#rates`}
-                    className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80"
-                  >
-                    提供割合
-                  </Link>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="relative h-16 w-32">
-                  <Image
-                    src={getIllustrationSrc(floorId)}
-                    alt={`${meta.title} ticket`}
-                    fill
-                    sizes="128px"
-                    className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.45)]"
-                  />
-                </div>
-                {match?.featuredNote ? (
-                  <span className="text-xs uppercase tracking-[0.3em] text-neon-yellow">{match.featuredNote}</span>
-                ) : null}
+                <Link
+                  href={`/gacha/${slug}`}
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
+                >
+                  ガチャを回す
+                </Link>
               </div>
             </article>
           );
         })}
       </section>
 
-      <Link
-        href="/purchase"
-        className="flex h-14 items-center justify-center rounded-full bg-[#ffe347] text-sm font-semibold uppercase tracking-[0.35em] text-[#2a1000] transition hover:bg-[#ffef7a]"
-      >
-        チケット購入へ
-      </Link>
     </section>
   );
 }
