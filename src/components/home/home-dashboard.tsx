@@ -52,9 +52,12 @@ export function HomeDashboard() {
 
   return (
     <section className="mx-auto w-full max-w-md space-y-10">
-      <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
-        チケットホール
-      </h1>
+      <div className="space-y-2 text-center">
+        <h1 className="font-display text-4xl tracking-[0.05em] text-transparent drop-shadow-[0_0_25px_rgba(255,246,92,0.35)] bg-gradient-to-r from-[#fff65c] via-[#ff9b3d] to-[#ff2d95] bg-clip-text">
+          チケットホール
+        </h1>
+        <p className="text-sm text-white/75">チケットを購入してガチャを回そう</p>
+      </div>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between text-xs text-zinc-400">
