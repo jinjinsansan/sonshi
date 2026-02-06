@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { useFormStatus } from "react-dom";
 import { signOutAction } from "@/app/(auth)/actions";
 import { useMainApp } from "@/components/providers/main-app-provider";
 
@@ -90,14 +91,23 @@ export function MenuScreen() {
         <p className="text-xs uppercase tracking-[0.4em] text-red-300">Sign Out</p>
         <p className="text-sm text-zinc-400">端末の共有時は必ずサインアウトしてください。</p>
         <form action={signOutAction}>
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-full border border-white/20 px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-pink hover:text-white"
-          >
-            SIGN OUT
-          </button>
+          <SignOutButton />
         </form>
       </div>
     </section>
+  );
+}
+
+function SignOutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="mt-2 w-full rounded-full border border-white/20 px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-white transition hover:border-neon-pink hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "SIGNING OUT..." : "SIGN OUT"}
+    </button>
   );
 }

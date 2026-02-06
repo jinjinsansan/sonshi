@@ -361,7 +361,9 @@ export async function signOutAction() {
   const store = await cookies();
   const token = store.get("sonshi_session")?.value;
   if (token) {
-    await deleteSession(token);
+    deleteSession(token).catch((error) => {
+      console.error("Failed to delete session during sign out", error);
+    });
   }
   await clearServerSessionCookie();
   redirect("/");
