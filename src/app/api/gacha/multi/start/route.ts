@@ -263,6 +263,6 @@ export async function POST(request: NextRequest) {
     totalPulls,
     currentPull: 0,
     status: "in_progress",
-    remaining: payload.remaining_quantity ?? (balance.quantity ?? 0) - totalPulls,
+    remaining: payload.remaining_quantity ?? (balance?.quantity ?? 0) - totalPulls,
   });
 }
