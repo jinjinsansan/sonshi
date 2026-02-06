@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
-import { Loader2, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Play } from "lucide-react";
+import type { HeatLevel, Phase } from "@/lib/gacha/scenario";
 
 type ScenarioStep = {
   index: number;
-  phase: string;
-  heat: string;
+  phase: Phase;
+  heat: HeatLevel;
   rarity: string;
   videoKey: string;
   videoUrl?: string | null;
+  durationSeconds: number;
 };
 
 type DrawResult = {
@@ -48,6 +49,22 @@ const RARITY_LABELS: Record<string, string> = {
   UR: "UR",
 };
 
+const RARITY_RANK: Record<string, number> = {
+  N: 1,
+  R: 2,
+  SR: 3,
+  SSR: 4,
+  UR: 5,
+};
+
+const RARITY_COLOR: Record<string, string> = {
+  N: "border-white/15 text-white",
+  R: "border-neon-blue/60 text-neon-blue",
+  SR: "border-purple-400/70 text-purple-200",
+  SSR: "border-amber-300/70 text-amber-200",
+  UR: "border-white/30 text-white bg-gradient-to-r from-neon-pink/15 to-neon-yellow/15",
+};
+
 type Props = {
   sessionId: string;
 };
@@ -55,11 +72,16 @@ type Props = {
 export function MultiGachaSession({ sessionId }: Props) {
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [revealed, setRevealed] = useState<DrawResult[]>([]);
-  const [currentScenario, setCurrentScenario] = useState<ScenarioStep | null>(null);
+  const [activeStep, setActiveStep] = useState<ScenarioStep | null>(null);
+  const [queuedResult, setQueuedResult] = useState<DrawResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [canAdvance, setCanAdvance] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
   const prefetchCache = useRef(new Set<string>());
   const preconnectCache = useRef(new Set<string>());
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -74,9 +96,7 @@ export function MultiGachaSession({ sessionId }: Props) {
         setSession(data);
         const current = data.currentPull ?? 0;
         setRevealed(data.results.slice(0, current));
-        if (current > 0) {
-          setCurrentScenario(data.scenario[current - 1] ?? null);
-        }
+        setShowSummary(data.status === "completed" || current >= data.totalPulls);
       })
       .catch((err: Error) => {
         if (mounted) setError(err.message);
@@ -88,15 +108,25 @@ export function MultiGachaSession({ sessionId }: Props) {
   }, [sessionId]);
 
   const totalPulls = session?.totalPulls ?? 0;
-  const currentPull = session?.currentPull ?? 0;
-  const isCompleted = session?.status === "completed" || currentPull >= totalPulls;
+  const completedCount = revealed.length;
+  const isCompleted = showSummary || completedCount >= totalPulls;
+
+  const activeIndex = activeStep?.index ?? null;
+
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!session?.scenario || session.scenario.length === 0) return;
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     if (connection?.saveData) return;
 
-    const currentIndex = Math.max(0, currentPull - 1);
+    const currentIndex = Math.max(0, (activeIndex ?? completedCount) - 1);
     const endIndex = Math.min(session.scenario.length, currentIndex + 3);
 
     session.scenario.slice(currentIndex, endIndex).forEach((step) => {
@@ -126,22 +156,54 @@ export function MultiGachaSession({ sessionId }: Props) {
         // ignore invalid URLs
       }
     });
-  }, [currentPull, session?.scenario]);
+  }, [activeIndex, completedCount, session?.scenario]);
 
   const progressDots = useMemo(() => {
     return Array.from({ length: totalPulls }).map((_, index) => {
       const position = index + 1;
       let state = "bg-white/10";
-      if (position < currentPull) state = "bg-neon-blue";
-      if (position === currentPull) state = "bg-neon-yellow animate-pulse";
-      return <span key={position} className={`h-2 w-2 rounded-full ${state}`} />;
+      if (position <= completedCount) state = "bg-neon-blue";
+      if (position === activeIndex) state = "bg-neon-yellow animate-pulse";
+      return <span key={position} className={`h-2 w-2 rounded-full transition ${state}`} />;
     });
-  }, [currentPull, totalPulls]);
+  }, [activeIndex, completedCount, totalPulls]);
+
+  const handleStepEnd = useCallback(
+    (force = false) => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+
+      if (!activeStep && !force) return;
+
+      setIsPlaying(false);
+      setCanAdvance(true);
+
+      if (queuedResult && activeStep) {
+        setRevealed((prev) => {
+          const next = [...prev];
+          next[activeStep.index - 1] = queuedResult;
+          return next;
+        });
+      }
+
+      setQueuedResult(null);
+
+      const finished = (activeStep?.index ?? completedCount) >= totalPulls;
+      if (finished) {
+        setShowSummary(true);
+        setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
+      }
+    },
+    [activeStep, completedCount, queuedResult, totalPulls]
+  );
 
   const handleNext = async () => {
-    if (!session || pending || isCompleted) return;
+    if (!session || pending || isPlaying || isCompleted) return;
     setError(null);
     setPending(true);
+    setCanAdvance(false);
     try {
       const response = await fetch(`/api/gacha/multi/${sessionId}/next`, { method: "POST" });
       const data: NextResponse = await response.json();
@@ -149,32 +211,45 @@ export function MultiGachaSession({ sessionId }: Props) {
         throw new Error(data.error ?? "取得に失敗しました");
       }
 
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              currentPull: data.currentPull,
-              status: data.status,
-            }
-          : prev
-      );
-      const resolvedResult = data.result ?? null;
-      if (resolvedResult) {
-        setRevealed((prev) => {
-          const next = [...prev];
-          if (!next[data.currentPull - 1]) {
-            next[data.currentPull - 1] = resolvedResult;
-          }
-          return next;
-        });
+      setSession((prev) => (prev ? { ...prev, currentPull: data.currentPull, status: data.status } : prev));
+      setActiveStep(data.scenario ?? null);
+      setQueuedResult(data.result ?? null);
+
+      // フォールバック（動画の再生イベントが来ない場合も進行させる）
+      const durationMs = Math.max((data.scenario?.durationSeconds ?? 8) * 1000, 3000);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = setTimeout(() => handleStepEnd(true), durationMs);
+
+      if (data.scenario?.videoUrl) {
+        setIsPlaying(true);
       }
-      setCurrentScenario(data.scenario ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "予期せぬエラーが発生しました");
+      setCanAdvance(true);
     } finally {
       setPending(false);
     }
   };
+
+  const bestCard = useMemo(() => {
+    const source = showSummary ? session?.results ?? [] : revealed;
+    if (!source.length) return null;
+    return [...source].reduce((prev, curr) => {
+      const prevRank = RARITY_RANK[prev.rarity] ?? 0;
+      const currRank = RARITY_RANK[curr.rarity] ?? 0;
+      if (currRank > prevRank) return curr;
+      if (currRank === prevRank) return curr; // 後着優先
+      return prev;
+    });
+  }, [revealed, session?.results, showSummary]);
+
+  const rarityCounts = useMemo(() => {
+    const source = showSummary ? session?.results ?? [] : revealed;
+    return source.reduce<Record<string, number>>((acc, item) => {
+      acc[item.rarity] = (acc[item.rarity] ?? 0) + 1;
+      return acc;
+    }, {});
+  }, [revealed, session?.results, showSummary]);
 
   if (error) {
     return <p className="text-sm text-red-400">{error}</p>;
@@ -184,92 +259,133 @@ export function MultiGachaSession({ sessionId }: Props) {
     return <p className="text-sm text-zinc-400">ロード中...</p>;
   }
 
+  const displayResults = showSummary ? session.results : revealed;
+  const buttonDisabled = pending || isPlaying || isCompleted;
+  const buttonLabel = isCompleted ? "完了" : session.currentPull === 0 ? "START" : isPlaying ? "再生中" : "NEXT";
+  const statusLabel = isPlaying ? "映像再生中..." : isCompleted ? "演出完了" : "ボタンを押して次へ";
+
   return (
     <div className="space-y-6">
       <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">
-            {currentPull}/{totalPulls}
+            {Math.min(session.currentPull, totalPulls)}/{totalPulls}
           </p>
           <div className="flex items-center gap-2">{progressDots}</div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-300">
-          {currentScenario?.videoUrl ? (
+          {activeStep?.videoUrl ? (
             <video
-              key={currentScenario.videoUrl}
-              src={currentScenario.videoUrl}
+              key={activeStep.videoUrl}
+              src={activeStep.videoUrl}
               preload="auto"
-              controls
+              autoPlay
+              muted
               playsInline
-              className="h-56 w-full rounded-xl object-cover"
+              controls={false}
+              onEnded={() => handleStepEnd()}
+              onError={() => handleStepEnd(true)}
+              className="h-60 w-full rounded-xl object-cover shadow-lg"
             />
           ) : (
-            <div className="flex h-56 items-center justify-center rounded-xl bg-black/40">
-              <div className="text-center text-xs uppercase tracking-[0.4em] text-zinc-400">
-                {currentScenario?.videoKey ?? "READY"}
-              </div>
+            <div className="flex h-60 flex-col items-center justify-center gap-2 rounded-xl bg-black/40 text-center text-xs uppercase tracking-[0.4em] text-zinc-400">
+              <Play className="h-6 w-6 text-neon-yellow" />
+              {activeStep ? activeStep.videoKey : "READY"}
             </div>
           )}
-          {currentScenario && (
-            <p className="mt-3 text-xs uppercase tracking-[0.35em] text-zinc-400">
-              {currentScenario.phase} / {currentScenario.heat}
-            </p>
+          {activeStep && (
+            <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-zinc-400">
+              <span>
+                {activeStep.phase} / {activeStep.heat}
+              </span>
+              <span>{activeStep.durationSeconds}s</span>
+            </div>
           )}
         </div>
 
         <div className="mt-5 flex items-center justify-between">
-          <p className="text-xs text-zinc-400">
-            {isCompleted ? "演出完了" : "NEXTで次の演出へ"}
-          </p>
+          <p className="text-xs text-zinc-400">{statusLabel}</p>
           <button
             type="button"
             onClick={handleNext}
-            disabled={pending || isCompleted}
-            className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black disabled:opacity-60"
+            disabled={buttonDisabled || !canAdvance}
+            className="relative overflow-hidden rounded-full border border-white/15 bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-xs uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)] transition hover:brightness-105 disabled:opacity-60"
           >
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : isCompleted ? "完了" : "NEXT"}
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : buttonLabel}
           </button>
         </div>
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
-        <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Results</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {(isCompleted ? session.results : revealed).map((result, index) => (
-            <div
-              key={`${result.cardId}-${index}`}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 p-3"
-            >
-              {result.imageUrl ? (
-                <Image
-                  src={result.imageUrl}
-                  alt={result.name}
-                  width={56}
-                  height={56}
-                  unoptimized
-                  className="h-14 w-14 rounded-xl object-cover"
-                />
-              ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-black/40 text-[0.6rem] text-zinc-400">
-                  NO IMAGE
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Results</p>
+          <p className="text-[11px] text-zinc-400">ミニカードは開示済みのみ表示</p>
+        </div>
+
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+          {displayResults.length === 0 ? (
+            <span className="text-xs text-zinc-500">まだ結果はありません</span>
+          ) : (
+            displayResults.map((result, index) => {
+              const color = RARITY_COLOR[result.rarity] ?? "border-white/15 text-white";
+              return (
+                <div
+                  key={`${result.cardId}-${index}`}
+                  className={`min-w-[120px] rounded-2xl border bg-black/40 p-3 text-xs ${color}`}
+                >
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em]">
+                    <span>{RARITY_LABELS[result.rarity] ?? result.rarity}</span>
+                    {result.serialNumber ? <span>#{result.serialNumber}</span> : null}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-white">{result.name}</p>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {showSummary && (
+          <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">まとめ結果</p>
+                <p className="text-sm text-zinc-300">全カードを開示しました</p>
+              </div>
+              {bestCard && (
+                <div className="rounded-2xl border border-neon-yellow/50 bg-black/40 px-4 py-3 text-xs text-neon-yellow">
+                  ベスト: {bestCard.name} ({RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity})
                 </div>
               )}
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-base text-white">{result.name}</p>
-                  <span className="flex items-center gap-1 text-xs text-neon-yellow">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {RARITY_LABELS[result.rarity] ?? result.rarity}
-                  </span>
-                </div>
-                {result.serialNumber ? (
-                  <p className="mt-1 text-xs text-zinc-400">#{result.serialNumber}</p>
-                ) : null}
-              </div>
             </div>
-          ))}
-        </div>
+
+            <div className="grid gap-2 sm:grid-cols-5 text-xs text-zinc-300">
+              {Object.entries(RARITY_LABELS).map(([rarity, label]) => (
+                <div key={rarity} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                  <p className="text-white">{label}</p>
+                  <p className="text-zinc-400">{rarityCounts[rarity] ?? 0} 枚</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => window.location.assign("/gacha/multi")}
+                className="rounded-full border border-white/15 px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-white transition hover:border-neon-blue"
+              >
+                もう一度回す
+              </button>
+              <button
+                type="button"
+                onClick={() => window.location.assign("/collection")}
+                className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)]"
+              >
+                コレクションを見る
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
