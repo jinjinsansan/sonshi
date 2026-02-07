@@ -128,19 +128,6 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     };
   }, [sessionId]);
 
-  // 初回動画のsrcを事前に設定（1本目が真っ黒問題の解決）
-  useEffect(() => {
-    if (
-      cinematicPhase === "video" && 
-      videoRef.current && 
-      session?.currentPull === 0 && 
-      session.scenario?.[0]?.videoUrl &&
-      !videoRef.current.src
-    ) {
-      videoRef.current.src = session.scenario[0].videoUrl;
-    }
-  }, [cinematicPhase, session]);
-
   const totalPulls = session?.totalPulls ?? 0;
   const completedCount = revealed.length;
   const isCompleted = showSummary || completedCount >= totalPulls;
@@ -384,10 +371,10 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         exit={{ opacity: 0 }}
       >
         {/* 全画面動画 */}
-        {cinematicPhase === "video" && activeStep?.videoUrl && (
+        {cinematicPhase === "video" && (activeStep?.videoUrl || session?.scenario?.[0]?.videoUrl) && (
           <video
             ref={videoRef}
-            src={activeStep.videoUrl}
+            src={activeStep?.videoUrl || session?.scenario?.[0]?.videoUrl || undefined}
             className="absolute inset-0 h-screen w-screen object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
             playsInline
             muted
