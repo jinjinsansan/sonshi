@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import dynamic from "next/dynamic";
+import GachaDetailExperience from "@/components/gacha/gacha-detail-experience";
 import { GachaHistory } from "@/components/gacha/gacha-history";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import {
@@ -8,8 +8,6 @@ import {
   fetchGachaCatalog,
   gachaIdMatches,
 } from "@/lib/utils/gacha";
-
-const GachaDetailExperience = dynamic(() => import("@/components/gacha/gacha-detail-experience").then((m) => m.GachaDetailExperience), { ssr: false });
 
 type Params = {
   params: Promise<{ id: string }>;

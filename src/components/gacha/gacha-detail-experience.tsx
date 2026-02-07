@@ -8,7 +8,7 @@ type Props = {
   gachaId: string;
 };
 
-export function GachaDetailExperience({ gachaId }: Props) {
+function GachaDetailExperience({ gachaId }: Props) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,3 +74,5 @@ export function GachaDetailExperience({ gachaId }: Props) {
     </div>
   );
 }
+
+export default GachaDetailExperience;
