@@ -118,8 +118,7 @@ function GachaDetailExperience({ gachaId }: Props) {
         
         <div className="p-6 sm:p-8">
           <div className="mb-8 text-center">
-            <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">SLOT PANEL</p>
-            <h2 className="mt-1 font-display text-2xl text-white drop-shadow-md">ガチャ開始</h2>
+            <h2 className="font-display text-2xl text-white drop-shadow-md">ガチャ開始</h2>
           </div>
 
           {error && (
@@ -128,15 +127,12 @@ function GachaDetailExperience({ gachaId }: Props) {
             </div>
           )}
 
-          {/* 黒い操作パネル（コンソール） */}
-          <div className="relative mx-auto max-w-2xl rounded-2xl bg-black border-t-2 border-white/10 shadow-[inset_0_5px_20px_rgba(0,0,0,1),0_10px_30px_rgba(0,0,0,0.5)]">
-            {/* パネルの光沢感 */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+          {/* ボタンエリア */}
+          <div className="flex flex-row items-start justify-center gap-5 py-4">
             
-            <div className="flex flex-row items-center justify-center gap-5 py-8 px-2">
-              
-              {/* 1連ボタン */}
-              <div className="relative group">
+            {/* 1連ボタン */}
+            <div className="flex flex-col items-center gap-3 group">
+              <div className="relative">
                 <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
                 <button
                   type="button"
@@ -156,11 +152,13 @@ function GachaDetailExperience({ gachaId }: Props) {
                   {/* ハイライト */}
                   <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
                 </button>
-                <div className="absolute -top-3 -right-2 text-[9px] font-bold text-amber-400 tracking-wider drop-shadow-md">SINGLE</div>
               </div>
+              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">SINGLE</div>
+            </div>
 
-              {/* 5連ボタン */}
-              <div className="relative group">
+            {/* 5連ボタン */}
+            <div className="flex flex-col items-center gap-3 group">
+              <div className="relative">
                 <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
                 <button
                   type="button"
@@ -180,11 +178,13 @@ function GachaDetailExperience({ gachaId }: Props) {
                   {/* ハイライト */}
                   <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
                 </button>
-                <div className="absolute -top-3 -right-2 text-[9px] font-bold text-amber-400 tracking-wider drop-shadow-md">MULTI</div>
               </div>
+              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MULTI</div>
+            </div>
 
-              {/* 10連ボタン */}
-              <div className="relative group">
+            {/* 10連ボタン */}
+            <div className="flex flex-col items-center gap-3 group">
+              <div className="relative">
                 <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
                 <button
                   type="button"
@@ -204,15 +204,10 @@ function GachaDetailExperience({ gachaId }: Props) {
                   {/* ハイライト */}
                   <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
                 </button>
-                <div className="absolute -top-3 -right-2 text-[9px] font-bold text-amber-400 tracking-wider drop-shadow-md">MAX</div>
               </div>
+              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MAX</div>
+            </div>
 
-            </div>
-            
-            {/* パネル下部の装飾 */}
-            <div className="absolute bottom-4 inset-x-0 text-center">
-               <p className="text-[10px] text-zinc-600 tracking-[0.5em] font-bold">PUSH BUTTON</p>
-            </div>
           </div>
           
           <div className="text-center text-xs text-zinc-500 mt-4">
