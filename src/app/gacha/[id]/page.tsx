@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { GachaDrawPanel } from "@/components/gacha/gacha-draw-panel";
+import dynamic from "next/dynamic";
 import { GachaHistory } from "@/components/gacha/gacha-history";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import {
@@ -8,6 +8,8 @@ import {
   fetchGachaCatalog,
   gachaIdMatches,
 } from "@/lib/utils/gacha";
+
+const GachaDetailExperience = dynamic(() => import("@/components/gacha/gacha-detail-experience").then((m) => m.GachaDetailExperience), { ssr: false });
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -144,19 +146,7 @@ export default async function GachaDetailPage({ params }: Params) {
             <span>必要チケット: {theme.ticketLabel}</span>
           </div>
         </div>
-        <div className="rounded-3xl border border-white/15 bg-black/20 p-4 shadow-[inset_0_0_25px_rgba(0,0,0,0.2)]">
-          <h2 className="text-center font-display text-xl text-white">ガチャを回す</h2>
-          <p className="mt-1 text-center text-xs text-white/70">単発・10連の抽選を順次実装中</p>
-          <div className="mt-5">
-            <GachaDrawPanel
-              gachaId={resolvedGachaId}
-              appearance={{
-                singleButtonClass: theme.singleButtonClass,
-                multiButtonClass: theme.multiButtonClass,
-              }}
-            />
-          </div>
-        </div>
+        <GachaDetailExperience gachaId={resolvedGachaId} />
       </article>
 
       <GachaHistory title="直近のガチャ履歴" limit={10} />
