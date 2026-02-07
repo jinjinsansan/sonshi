@@ -72,7 +72,7 @@ type Props = {
   fullscreenMode?: boolean;
 };
 
-type CinematicPhase = "video" | "card";
+type CinematicPhase = "video" | "fade" | "result";
 
 export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = false }: Props) {
   const [session, setSession] = useState<SessionResponse | null>(null);
@@ -85,6 +85,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   const [canAdvance, setCanAdvance] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [cinematicPhase, setCinematicPhase] = useState<CinematicPhase | null>(null);
+  const [fadeProgress, setFadeProgress] = useState(0);
   const prefetchCache = useRef(new Set<string>());
   const preconnectCache = useRef(new Set<string>());
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,13 +107,15 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         setRevealed(data.results.slice(0, current));
         setShowSummary(data.status === "completed" || current >= data.totalPulls);
         
-        // 自動的に最初のステップを開始
+        // 自動的に最初のステップを開始（サイトUIを表示せず直接動画へ）
         if (current === 0 && handleNextRef.current) {
+          // cinematicPhaseを即座にvideoに設定してサイトUIを非表示
+          setCinematicPhase("video");
           setTimeout(() => {
             if (mounted && handleNextRef.current) {
               handleNextRef.current();
             }
-          }, 500);
+          }, 100);
         }
       })
       .catch((err: Error) => {
@@ -213,12 +216,26 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     if (finished) {
       setShowSummary(true);
       setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
-      setCinematicPhase("card");
+      // 最後の動画終了後、フェードアウト開始
+      setCinematicPhase("fade");
+      setFadeProgress(0);
+      // 1.5秒かけてフェードアウト
+      const fadeInterval = setInterval(() => {
+        setFadeProgress((prev) => {
+          if (prev >= 1) {
+            clearInterval(fadeInterval);
+            setCinematicPhase("result");
+            return 1;
+          }
+          return prev + 0.05;
+        });
+      }, 75);
       onFinished?.();
     } else {
       // 次の動画へ進む（cinematicPhaseはvideoのまま維持）
       setQueuedResult(null);
       setCanAdvance(true);
+      setActiveStep(null); // activeStepをリセットして次の動画をロード
       
       if (handleNextRef.current) {
         handleNextRef.current();
@@ -232,7 +249,20 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     setRevealed(remainingResults);
     setShowSummary(true);
     setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
-    setCinematicPhase("card");
+    // フェードアウト開始
+    setCinematicPhase("fade");
+    setFadeProgress(0);
+    // 1秒かけてフェードアウト
+    const fadeInterval = setInterval(() => {
+      setFadeProgress((prev) => {
+        if (prev >= 1) {
+          clearInterval(fadeInterval);
+          setCinematicPhase("result");
+          return 1;
+        }
+        return prev + 0.1;
+      });
+    }, 100);
     onFinished?.();
   }, [session, totalPulls, onFinished]);
 
@@ -305,7 +335,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
 
   const displayResults = showSummary ? session.results : revealed;
 
-  const cinematicOverlay = cinematicPhase && activeStep && typeof window !== "undefined" ? createPortal(
+  const cinematicOverlay = cinematicPhase && typeof window !== "undefined" ? createPortal(
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-black"
@@ -314,9 +344,9 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         exit={{ opacity: 0 }}
       >
         {/* 全画面動画 */}
-        {cinematicPhase === "video" && activeStep.videoUrl && (
+        {cinematicPhase === "video" && activeStep?.videoUrl && (
           <video
-            key={activeStep.videoUrl}
+            key={`video-${activeStep.index}`}
             src={activeStep.videoUrl}
             className="absolute inset-0 h-screen w-screen object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
             playsInline
@@ -334,14 +364,14 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
 
 
         {/* プログレスインジケーター（動画再生中のみ） */}
-        {cinematicPhase === "video" && (
+        {cinematicPhase === "video" && activeStep && (
           <div className="pointer-events-none absolute left-1/2 top-6 z-10 flex -translate-x-1/2 items-center gap-2">
             {progressDots}
           </div>
         )}
 
         {/* パチスロ風停止ボタン（動画終了後） */}
-        {cinematicPhase === "video" && !isPlaying && canAdvance && (
+        {cinematicPhase === "video" && !isPlaying && canAdvance && activeStep && (
           <motion.div
             className="absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 items-center gap-6"
             initial={{ scale: 0.8, opacity: 0 }}
@@ -388,49 +418,51 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
           </motion.div>
         )}
 
-        {/* カード表示（全演出終了後またはスキップ後） */}
-        {cinematicPhase === "card" && showSummary && (
-          <div className="relative z-20 flex h-full flex-col items-center justify-center bg-black px-6">
+        {/* フェードアウト */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 bg-black"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: cinematicPhase === "fade" ? fadeProgress : cinematicPhase === "result" ? 1 : 0 }}
+        />
+
+        {/* カード表示（1枚のみ、ウマロワイヤル方式） */}
+        {cinematicPhase === "result" && showSummary && bestCard && (
+          <div className="relative z-20 flex h-full flex-col items-center justify-center bg-black/95 px-6">
             <motion.div
-              className="flex w-full max-w-4xl flex-col items-center gap-8 text-white"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
+              className="flex w-full max-w-3xl flex-col items-center gap-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
             >
-              <p className="text-sm uppercase tracking-[0.6em] text-white/60">10連結果</p>
+              <p className="text-sm uppercase tracking-[0.6em] text-white/60">結果</p>
               
-              {bestCard && (
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <p className="font-display text-6xl tracking-wide">{bestCard.name}</p>
-                  <div className="flex items-center gap-4">
-                    <span className="rounded-full border border-neon-yellow/50 bg-neon-yellow/10 px-8 py-3 text-2xl tracking-[0.4em]">
-                      {RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity}
-                    </span>
-                    {bestCard.serialNumber && (
-                      <span className="text-xl text-white/70">#{bestCard.serialNumber}</span>
-                    )}
+              <div className="flex flex-col items-center gap-3 text-center">
+                <p className="font-serif text-4xl">{bestCard.name}</p>
+                <span className="rounded-full border border-white/30 px-6 py-2 text-lg tracking-[0.4em]">
+                  ★{RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity}
+                </span>
+              </div>
+
+              {bestCard.imageUrl && (
+                <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-white/20 bg-white/10 p-6">
+                  <div className="relative w-full overflow-hidden rounded-2xl bg-black/30">
+                    <div className="relative aspect-[3/4] w-full">
+                      <img
+                        src={bestCard.imageUrl}
+                        alt={bestCard.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="mt-4 grid w-full max-w-2xl gap-3 sm:grid-cols-5">
-                {Object.entries(RARITY_LABELS).map(([rarity, label]) => (
-                  <div key={rarity} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center">
-                    <p className="text-lg font-semibold text-white">{label}</p>
-                    <p className="mt-1 text-2xl text-neon-yellow">{rarityCounts[rarity] ?? 0}</p>
-                  </div>
-                ))}
-              </div>
-
               <button
                 type="button"
-                onClick={() => {
-                  setCinematicPhase(null);
-                  if (onFinished) onFinished();
-                }}
-                className="mt-8 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-16 py-5 text-lg font-semibold uppercase tracking-[0.4em] text-black shadow-[0_0_40px_rgba(255,246,92,0.6)] transition hover:brightness-110"
+                onClick={() => window.location.assign("/collection")}
+                className="mt-4 rounded-full bg-white/90 px-10 py-3 text-base font-semibold text-black transition hover:bg-white"
               >
-                結果を見る
+                結果履歴ページに戻る
               </button>
             </motion.div>
           </div>
