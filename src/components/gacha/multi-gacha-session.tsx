@@ -128,6 +128,19 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     };
   }, [sessionId]);
 
+  // 初回動画のsrcを事前に設定（1本目が真っ黒問題の解決）
+  useEffect(() => {
+    if (
+      cinematicPhase === "video" && 
+      videoRef.current && 
+      session?.currentPull === 0 && 
+      session.scenario?.[0]?.videoUrl &&
+      !videoRef.current.src
+    ) {
+      videoRef.current.src = session.scenario[0].videoUrl;
+    }
+  }, [cinematicPhase, session]);
+
   const totalPulls = session?.totalPulls ?? 0;
   const completedCount = revealed.length;
   const isCompleted = showSummary || completedCount >= totalPulls;
