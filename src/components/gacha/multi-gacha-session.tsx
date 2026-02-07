@@ -69,11 +69,12 @@ const RARITY_COLOR: Record<string, string> = {
 type Props = {
   sessionId: string;
   onFinished?: () => void;
+  fullscreenMode?: boolean;
 };
 
 type CinematicPhase = "video" | "fade" | "card";
 
-export function MultiGachaSession({ sessionId, onFinished }: Props) {
+export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = false }: Props) {
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [revealed, setRevealed] = useState<DrawResult[]>([]);
   const [activeStep, setActiveStep] = useState<ScenarioStep | null>(null);
@@ -84,11 +85,9 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
   const [canAdvance, setCanAdvance] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [cinematicPhase, setCinematicPhase] = useState<CinematicPhase | null>(null);
-  const [fadeProgress, setFadeProgress] = useState(0);
   const prefetchCache = useRef(new Set<string>());
   const preconnectCache = useRef(new Set<string>());
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleNextRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -135,9 +134,6 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     return () => {
       if (fallbackTimerRef.current) {
         clearTimeout(fallbackTimerRef.current);
-      }
-      if (fadeTimerRef.current) {
-        clearTimeout(fadeTimerRef.current);
       }
     };
   }, []);
@@ -189,23 +185,6 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     });
   }, [activeIndex, completedCount, totalPulls]);
 
-  const startFadeToCard = useCallback(() => {
-    setCinematicPhase("fade");
-    const FADE_DURATION = 800;
-    const start = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / FADE_DURATION, 1);
-      setFadeProgress(progress);
-      if (progress < 1) {
-        fadeTimerRef.current = setTimeout(tick, 16);
-      } else {
-        setCinematicPhase("card");
-      }
-    };
-    tick();
-  }, []);
-
   const handleStepEnd = useCallback(
     (force = false) => {
       if (fallbackTimerRef.current) {
@@ -221,7 +200,7 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     [activeStep]
   );
 
-  const handleAdvanceToCard = useCallback(() => {
+  const handleAdvanceToNext = useCallback(() => {
     if (!activeStep || !queuedResult) return;
 
     setRevealed((prev) => {
@@ -234,27 +213,25 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     if (finished) {
       setShowSummary(true);
       setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
+      setCinematicPhase(null);
       onFinished?.();
+    } else {
+      // 次の動画へ進む
+      setCinematicPhase(null);
+      setQueuedResult(null);
+      setCanAdvance(true);
+      
+      if (handleNextRef.current) {
+        setTimeout(() => {
+          if (handleNextRef.current) {
+            handleNextRef.current();
+          }
+        }, 300);
+      }
     }
+  }, [activeStep, completedCount, onFinished, queuedResult, totalPulls]);
 
-    startFadeToCard();
-  }, [activeStep, completedCount, onFinished, queuedResult, totalPulls, startFadeToCard]);
 
-  const handleCardAcknowledge = useCallback(() => {
-    setCinematicPhase(null);
-    setFadeProgress(0);
-    setQueuedResult(null);
-    setCanAdvance(true);
-    
-    // 次の演出を自動的に開始
-    if (handleNextRef.current && !isCompleted) {
-      setTimeout(() => {
-        if (handleNextRef.current) {
-          handleNextRef.current();
-        }
-      }, 300);
-    }
-  }, [isCompleted]);
 
   const handleNext = useCallback(async () => {
     if (!session || pending || isPlaying || isCompleted) return;
@@ -349,55 +326,7 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
           />
         )}
 
-        {/* フェードアウトオーバーレイ */}
-        <motion.div
-          className="pointer-events-none absolute inset-0 bg-black"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: cinematicPhase === "fade" ? fadeProgress : cinematicPhase === "card" ? 1 : 0 }}
-        />
 
-        {/* カード表示 */}
-        {cinematicPhase === "card" && queuedResult && (
-          <div className="relative z-20 flex h-full flex-col items-center justify-center bg-black/95 px-6">
-            <motion.div
-              className="flex w-full max-w-2xl flex-col items-center gap-6 text-white"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <p className="text-sm uppercase tracking-[0.6em] text-white/60">排出結果</p>
-              <div className="flex flex-col items-center gap-4 text-center">
-                <p className="font-display text-5xl tracking-wide">{queuedResult.name}</p>
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full border border-neon-yellow/50 bg-neon-yellow/10 px-6 py-2 text-xl tracking-[0.4em]">
-                    {RARITY_LABELS[queuedResult.rarity] ?? queuedResult.rarity}
-                  </span>
-                  {queuedResult.serialNumber && (
-                    <span className="text-lg text-white/70">#{queuedResult.serialNumber}</span>
-                  )}
-                </div>
-              </div>
-              {queuedResult.imageUrl && (
-                <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/5 p-6">
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-black/30">
-                    <img
-                      src={queuedResult.imageUrl}
-                      alt={queuedResult.name}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleCardAcknowledge}
-                className="mt-6 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-12 py-4 text-base font-semibold uppercase tracking-[0.4em] text-black shadow-[0_0_30px_rgba(255,246,92,0.5)] transition hover:brightness-110"
-              >
-                次へ
-              </button>
-            </motion.div>
-          </div>
-        )}
 
         {/* プログレスインジケーター（動画再生中のみ） */}
         {cinematicPhase === "video" && (
@@ -416,7 +345,7 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
           >
             <button
               type="button"
-              onClick={handleAdvanceToCard}
+              onClick={handleAdvanceToNext}
               className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95"
             >
               <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
@@ -442,93 +371,95 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     <>
       {cinematicOverlay}
       
-      <div className="space-y-6">
-        <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">
-              {Math.min(session.currentPull, totalPulls)}/{totalPulls}
-            </p>
-            <div className="flex items-center gap-2">{progressDots}</div>
-          </div>
-
-          {!cinematicPhase && session.currentPull > 0 && (
-            <div className="mt-5 text-center">
-              <p className="text-sm text-zinc-400">演出進行中...</p>
+      {!fullscreenMode && (
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">
+                {Math.min(session.currentPull, totalPulls)}/{totalPulls}
+              </p>
+              <div className="flex items-center gap-2">{progressDots}</div>
             </div>
-          )}
-        </div>
 
-        <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Results</p>
-            <p className="text-[11px] text-zinc-400">{revealed.length} / {totalPulls}</p>
-          </div>
-
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-            {displayResults.length === 0 ? (
-              <span className="text-xs text-zinc-500">まだ結果はありません</span>
-            ) : (
-              displayResults.map((result, index) => {
-                const color = RARITY_COLOR[result.rarity] ?? "border-white/15 text-white";
-                return (
-                  <div
-                    key={`${result.cardId}-${index}`}
-                    className={`min-w-[120px] rounded-2xl border bg-black/40 p-3 text-xs ${color}`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em]">
-                      <span>{RARITY_LABELS[result.rarity] ?? result.rarity}</span>
-                      {result.serialNumber ? <span>#{result.serialNumber}</span> : null}
-                    </div>
-                    <p className="mt-2 line-clamp-2 text-white">{result.name}</p>
-                  </div>
-                );
-              })
+            {!cinematicPhase && session.currentPull > 0 && (
+              <div className="mt-5 text-center">
+                <p className="text-sm text-zinc-400">演出進行中...</p>
+              </div>
             )}
           </div>
 
-          {showSummary && (
-            <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-black/25 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">まとめ結果</p>
-                  <p className="text-sm text-zinc-300">全カードを開示しました</p>
-                </div>
-                {bestCard && (
-                  <div className="rounded-2xl border border-neon-yellow/50 bg-black/40 px-4 py-3 text-xs text-neon-yellow">
-                    ベスト: {bestCard.name} ({RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity})
-                  </div>
-                )}
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-5 text-xs text-zinc-300">
-                {Object.entries(RARITY_LABELS).map(([rarity, label]) => (
-                  <div key={rarity} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                    <p className="text-white">{label}</p>
-                    <p className="text-zinc-400">{rarityCounts[rarity] ?? 0} 枚</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => window.location.assign("/gacha/multi")}
-                  className="rounded-full border border-white/15 px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-white transition hover:border-neon-blue"
-                >
-                  もう一度回す
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.location.assign("/collection")}
-                  className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)]"
-                >
-                  コレクションを見る
-                </button>
-              </div>
+          <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Results</p>
+              <p className="text-[11px] text-zinc-400">{revealed.length} / {totalPulls}</p>
             </div>
-          )}
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+              {displayResults.length === 0 ? (
+                <span className="text-xs text-zinc-500">まだ結果はありません</span>
+              ) : (
+                displayResults.map((result, index) => {
+                  const color = RARITY_COLOR[result.rarity] ?? "border-white/15 text-white";
+                  return (
+                    <div
+                      key={`${result.cardId}-${index}`}
+                      className={`min-w-[120px] rounded-2xl border bg-black/40 p-3 text-xs ${color}`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em]">
+                        <span>{RARITY_LABELS[result.rarity] ?? result.rarity}</span>
+                        {result.serialNumber ? <span>#{result.serialNumber}</span> : null}
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-white">{result.name}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {showSummary && (
+              <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-neon-blue">まとめ結果</p>
+                    <p className="text-sm text-zinc-300">全カードを開示しました</p>
+                  </div>
+                  {bestCard && (
+                    <div className="rounded-2xl border border-neon-yellow/50 bg-black/40 px-4 py-3 text-xs text-neon-yellow">
+                      ベスト: {bestCard.name} ({RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity})
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-5 text-xs text-zinc-300">
+                  {Object.entries(RARITY_LABELS).map(([rarity, label]) => (
+                    <div key={rarity} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                      <p className="text-white">{label}</p>
+                      <p className="text-zinc-400">{rarityCounts[rarity] ?? 0} 枚</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => window.location.assign("/gacha/multi")}
+                    className="rounded-full border border-white/15 px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-white transition hover:border-neon-blue"
+                  >
+                    もう一度回す
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.assign("/collection")}
+                    className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-4 py-3 text-[11px] uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)]"
+                  >
+                    コレクションを見る
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
