@@ -435,7 +435,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
           <video
             ref={videoRef}
             src={activeStep?.videoUrl || session?.scenario?.[0]?.videoUrl || undefined}
-            className="absolute inset-0 h-screen w-screen object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
+            className="absolute inset-0 h-screen w-screen object-contain [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
             playsInline
             autoPlay={!activeStep}
             muted
