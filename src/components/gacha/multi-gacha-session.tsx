@@ -432,7 +432,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
 
         {/* カード表示（1枚のみ、ウマロワイヤル方式） */}
         {cinematicPhase === "result" && showSummary && bestCard && (
-          <div className="relative z-20 flex min-h-screen flex-col items-center bg-black/95 px-4 pb-20 pt-10">
+          <div className="relative z-20 flex min-h-screen flex-col items-center bg-black/95 px-4 pb-28 pt-10">
             <motion.div
               className="flex w-full max-w-3xl flex-col items-center gap-6 text-white"
               initial={{ opacity: 0, y: 20 }}
@@ -462,13 +462,15 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => window.location.assign("/collection")}
-                className="mt-2 rounded-full bg-white/90 px-10 py-3 text-base font-semibold text-black transition hover:bg-white"
-              >
-                結果履歴ページに戻る
-              </button>
+              <div className="mt-2 flex w-full justify-center">
+                <button
+                  type="button"
+                  onClick={() => window.location.assign("/collection")}
+                  className="w-full max-w-xs rounded-full bg-white/90 px-6 py-3 text-base font-semibold text-black transition hover:bg-white"
+                >
+                  結果履歴ページに戻る
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
