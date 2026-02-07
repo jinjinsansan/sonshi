@@ -390,7 +390,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
                   NEXT
                 </span>
                 <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
-                  停止
+                  次へ
                 </span>
               </div>
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
@@ -401,9 +401,9 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
             <button
               type="button"
               onClick={handleSkip}
-              className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 shadow-[0_8px_32px_rgba(217,119,6,0.6),0_0_80px_rgba(217,119,6,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(217,119,6,0.8),0_0_100px_rgba(217,119,6,0.6)] active:scale-95"
+              className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-zinc-800 via-zinc-900 to-black shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_80px_rgba(0,0,0,0.6),inset_0_2px_8px_rgba(255,255,255,0.2),inset_0_-4px_12px_rgba(0,0,0,0.6)] transition-all hover:shadow-[0_8px_40px_rgba(0,0,0,0.9),0_0_100px_rgba(0,0,0,0.7)] active:scale-95"
             >
-              <div className="absolute inset-2 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
+              <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-[inset_0_2px_12px_rgba(255,255,255,0.3),inset_0_-2px_8px_rgba(0,0,0,0.5)]" />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                   SKIP
@@ -412,8 +412,8 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
                   全省略
                 </span>
               </div>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
-              <div className="absolute -inset-2 animate-pulse rounded-full bg-amber-500/30 blur-xl group-hover:bg-amber-500/50" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/10" />
+              <div className="absolute -inset-2 animate-pulse rounded-full bg-zinc-500/20 blur-xl group-hover:bg-zinc-500/30" />
             </button>
           </motion.div>
         )}
