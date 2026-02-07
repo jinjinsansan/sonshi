@@ -112,107 +112,101 @@ function GachaDetailExperience({ gachaId }: Props) {
   return (
     <>
       {loadingOverlay}
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 shadow-2xl">
-        {/* 筐体の上部装飾 */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-white/10 via-white/30 to-white/10" />
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="font-display text-2xl text-white drop-shadow-md">ガチャ開始</h2>
+        </div>
+
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-3 text-center">
+            <p className="text-sm text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* ボタンエリア */}
+        <div className="flex flex-row items-start justify-center gap-5 py-2">
+          {/* 1連ボタン */}
+          <div className="flex flex-col items-center gap-3 group">
+            <div className="relative">
+              <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+              <button
+                type="button"
+                onClick={() => startSession(1)}
+                disabled={pending}
+                className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+              >
+                {/* 外側リング (発光部) */}
+                <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                
+                {/* 内側ボタン (シルバーメタリック) */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                  <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">1</span>
+                  <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                </div>
+                
+                {/* ハイライト */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+              </button>
+            </div>
+            <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">SINGLE</div>
+          </div>
+
+          {/* 5連ボタン */}
+          <div className="flex flex-col items-center gap-3 group">
+            <div className="relative">
+              <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+              <button
+                type="button"
+                onClick={() => startSession(5)}
+                disabled={pending}
+                className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+              >
+                {/* 外側リング */}
+                <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                
+                {/* 内側ボタン */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                  <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">5</span>
+                  <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                </div>
+                
+                {/* ハイライト */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+              </button>
+            </div>
+            <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MULTI</div>
+          </div>
+
+          {/* 10連ボタン */}
+          <div className="flex flex-col items-center gap-3 group">
+            <div className="relative">
+              <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+              <button
+                type="button"
+                onClick={() => startSession(10)}
+                disabled={pending}
+                className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+              >
+                {/* 外側リング */}
+                <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                
+                {/* 内側ボタン */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                  <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">10</span>
+                  <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                </div>
+                
+                {/* ハイライト */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+              </button>
+            </div>
+            <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MAX</div>
+          </div>
+
+        </div>
         
-        <div className="p-6 sm:p-8">
-          <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl text-white drop-shadow-md">ガチャ開始</h2>
-          </div>
-
-          {error && (
-            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-950/40 p-3 text-center">
-              <p className="text-sm text-red-300">{error}</p>
-            </div>
-          )}
-
-          {/* ボタンエリア */}
-          <div className="flex flex-row items-start justify-center gap-5 py-4">
-            
-            {/* 1連ボタン */}
-            <div className="flex flex-col items-center gap-3 group">
-              <div className="relative">
-                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
-                <button
-                  type="button"
-                  onClick={() => startSession(1)}
-                  disabled={pending}
-                  className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
-                >
-                  {/* 外側リング (発光部) */}
-                  <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
-                  
-                  {/* 内側ボタン (シルバーメタリック) */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
-                    <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">1</span>
-                    <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
-                  </div>
-                  
-                  {/* ハイライト */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
-                </button>
-              </div>
-              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">SINGLE</div>
-            </div>
-
-            {/* 5連ボタン */}
-            <div className="flex flex-col items-center gap-3 group">
-              <div className="relative">
-                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
-                <button
-                  type="button"
-                  onClick={() => startSession(5)}
-                  disabled={pending}
-                  className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
-                >
-                  {/* 外側リング */}
-                  <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
-                  
-                  {/* 内側ボタン */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
-                    <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">5</span>
-                    <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
-                  </div>
-                  
-                  {/* ハイライト */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
-                </button>
-              </div>
-              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MULTI</div>
-            </div>
-
-            {/* 10連ボタン */}
-            <div className="flex flex-col items-center gap-3 group">
-              <div className="relative">
-                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
-                <button
-                  type="button"
-                  onClick={() => startSession(10)}
-                  disabled={pending}
-                  className="relative h-24 w-24 rounded-full transition-transform active:scale-95 disabled:opacity-60"
-                >
-                  {/* 外側リング */}
-                  <div className={`absolute inset-0 rounded-full border-[5px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
-                  
-                  {/* 内側ボタン */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
-                    <span className="font-display text-4xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">10</span>
-                    <span className="text-[9px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
-                  </div>
-                  
-                  {/* ハイライト */}
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
-                </button>
-              </div>
-              <div className="text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MAX</div>
-            </div>
-
-          </div>
-          
-          <div className="text-center text-xs text-zinc-500 mt-4">
-            <p>※ボタンを押すと演出が始まります</p>
-          </div>
+        <div className="text-center text-xs text-zinc-500">
+          <p>※ボタンを押すと演出が始まります</p>
         </div>
       </div>
     </>
