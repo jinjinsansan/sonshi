@@ -255,36 +255,72 @@ export async function POST(request: NextRequest) {
 
   const scenario = buildScenario(results.map((result) => result.rarity));
 
-  const { data: rpcData, error: rpcError } = await serviceSupabase.rpc(
-    "start_multi_gacha",
-    {
-      p_user_id: user.id,
-      p_gacha_id: gacha.id,
-      p_ticket_type_id: gacha.ticket_type_id,
-      p_total_pulls: totalPulls,
-      p_session_type: sessionType,
-      p_results: results,
-      p_scenario: scenario,
-    }
-  );
-
-  if (rpcError) {
-    const message = rpcError.message;
-    if (message.includes("INSUFFICIENT_TICKETS")) {
-      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
-    }
-    if (message.includes("CARD_SUPPLY_EXCEEDED") || message.includes("duplicate key")) {
-      return NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 });
-    }
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-
-  const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-  if (!payload?.session_id) {
-    return NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 });
-  }
+  let sessionId: string;
 
   if (isFreeUser) {
+    // フリーユーザーはRPCを使わず直接DB操作（チケットチェックを回避）
+    for (const [cardId, used] of usageMap.entries()) {
+      const currentSupply = supplyMap.get(cardId) ?? 0;
+      const { error: supplyError } = await serviceSupabase
+        .from("cards")
+        .update({ current_supply: currentSupply + used })
+        .eq("id", cardId);
+
+      if (supplyError) {
+        return NextResponse.json({ error: supplyError.message }, { status: 500 });
+      }
+    }
+
+    const inventoryRows = results.map((result) => ({
+      card_id: result.cardId,
+      owner_id: user.id,
+      serial_number: result.serialNumber ?? 0,
+      obtained_via: "multi_gacha",
+    }));
+
+    const { error: inventoryError } = await serviceSupabase
+      .from("card_inventory")
+      .insert(inventoryRows);
+
+    if (inventoryError) {
+      return NextResponse.json({ error: inventoryError.message }, { status: 500 });
+    }
+
+    const historyRows = results.map((result) => ({
+      user_id: user.id,
+      gacha_id: gacha.id,
+      card_id: result.cardId,
+      obtained_via: "multi_gacha",
+    }));
+
+    const { error: historyError } = await serviceSupabase
+      .from("gacha_results")
+      .insert(historyRows);
+
+    if (historyError) {
+      return NextResponse.json({ error: historyError.message }, { status: 500 });
+    }
+
+    const { data: sessionData, error: sessionError } = await serviceSupabase
+      .from("multi_gacha_sessions")
+      .insert({
+        user_id: user.id,
+        session_type: sessionType,
+        total_pulls: totalPulls,
+        current_pull: 0,
+        scenario_path: scenario,
+        status: "in_progress",
+        results: results,
+      })
+      .select("id")
+      .single();
+
+    if (sessionError || !sessionData) {
+      return NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 });
+    }
+
+    sessionId = sessionData.id;
+
     await serviceSupabase.from("user_tickets").upsert(
       {
         id: balance?.id,
@@ -294,13 +330,44 @@ export async function POST(request: NextRequest) {
       },
       { onConflict: "user_id,ticket_type_id" }
     );
+  } else {
+    const { data: rpcData, error: rpcError } = await serviceSupabase.rpc(
+      "start_multi_gacha",
+      {
+        p_user_id: user.id,
+        p_gacha_id: gacha.id,
+        p_ticket_type_id: gacha.ticket_type_id,
+        p_total_pulls: totalPulls,
+        p_session_type: sessionType,
+        p_results: results,
+        p_scenario: scenario,
+      }
+    );
+
+    if (rpcError) {
+      const message = rpcError.message;
+      if (message.includes("INSUFFICIENT_TICKETS")) {
+        return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
+      }
+      if (message.includes("CARD_SUPPLY_EXCEEDED") || message.includes("duplicate key")) {
+        return NextResponse.json({ error: "カード在庫が不足しています" }, { status: 400 });
+      }
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+
+    const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!payload?.session_id) {
+      return NextResponse.json({ error: "セッション作成に失敗しました" }, { status: 500 });
+    }
+
+    sessionId = payload.session_id;
   }
 
   return NextResponse.json({
-    sessionId: payload.session_id,
+    sessionId,
     totalPulls,
     currentPull: 0,
     status: "in_progress",
-    remaining: isFreeUser ? 9999 : payload.remaining_quantity ?? 0,
+    remaining: isFreeUser ? 9999 : 0,
   });
 }
