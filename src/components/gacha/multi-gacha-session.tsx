@@ -432,7 +432,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
 
         {/* カード表示（1枚のみ、ウマロワイヤル方式） */}
         {cinematicPhase === "result" && showSummary && bestCard && (
-          <div className="relative z-20 flex h-full flex-col items-center justify-center bg-black/95 px-6">
+          <div className="relative z-20 flex min-h-screen flex-col items-center bg-black/95 px-4 pb-20 pt-10">
             <motion.div
               className="flex w-full max-w-3xl flex-col items-center gap-6 text-white"
               initial={{ opacity: 0, y: 20 }}
@@ -442,14 +442,14 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
               <p className="text-sm uppercase tracking-[0.6em] text-white/60">結果</p>
               
               <div className="flex flex-col items-center gap-3 text-center">
-                <p className="font-serif text-4xl">{bestCard.name}</p>
+                <p className="font-serif text-4xl leading-tight">{bestCard.name}</p>
                 <span className="rounded-full border border-white/30 px-6 py-2 text-lg tracking-[0.4em]">
                   ★{RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity}
                 </span>
               </div>
 
               {bestCard.imageUrl && (
-                <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-white/20 bg-white/10 p-6">
+                <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-white/20 bg-white/10 p-5">
                   <div className="relative w-full overflow-hidden rounded-2xl bg-black/30">
                     <div className="relative aspect-[3/4] w-full">
                       <img
@@ -465,7 +465,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
               <button
                 type="button"
                 onClick={() => window.location.assign("/collection")}
-                className="mt-4 rounded-full bg-white/90 px-10 py-3 text-base font-semibold text-black transition hover:bg-white"
+                className="mt-2 rounded-full bg-white/90 px-10 py-3 text-base font-semibold text-black transition hover:bg-white"
               >
                 結果履歴ページに戻る
               </button>
