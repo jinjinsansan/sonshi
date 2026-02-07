@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
   }
 
   const isFreeUser = user.email?.toLowerCase() === FREE_USER_EMAIL;
+  
+  console.log("[MULTI GACHA] User email:", user.email, "| Is free user:", isFreeUser);
 
   const body = await request.json().catch(() => ({}));
   const requestedGacha = typeof body.gachaId === "string" ? body.gachaId : body.ticketCode;
@@ -138,7 +140,18 @@ export async function POST(request: NextRequest) {
     );
   } else {
     if (!balance || originalBalance < totalPulls) {
-      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
+      return NextResponse.json(
+        { 
+          error: "チケットが不足しています",
+          debug: {
+            userEmail: user.email,
+            isFreeUser,
+            balance: originalBalance,
+            required: totalPulls
+          }
+        }, 
+        { status: 400 }
+      );
     }
   }
 
