@@ -45,7 +45,7 @@ const DEV_FIVE_KEYS = [
   "ダブル激熱.mp4",
   "灼熱チャンス.mp4",
   "激熱漢字レインボー.mp4",
-  "神田清人登場.mp4",
+  "伊東登場.mp4",              // 6本目: 5.1MB（神田清人登場から切り替え）
 ];
 
 const BASE_URL = publicEnv.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
