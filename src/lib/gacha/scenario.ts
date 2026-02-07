@@ -40,12 +40,12 @@ const VIDEO_LIBRARY: Record<Phase, Partial<Record<HeatLevel, string[]>>> = {
 
 // 開発用：5連ガチャ時に固定で再生する6本（1本目はイントロ、2-6本目は音声付き4秒映像）
 const DEV_FIVE_KEYS = [
-  "ready-go.mp4",           // 1本目: 2秒のイントロ（音声なしでOK）
+  "２秒readygo.mp4",           // 1本目: 2秒のイントロ（音声なしでOK）
   "尊師チャンスロゴ.mp4",
-  "超激アツ.mp4",
-  "天国モード突入.mp4",
-  "確定イエーイ.mp4",
-  "確定.mp4",
+  "ダブル激熱.mp4",
+  "灼熱チャンス.mp4",
+  "激熱漢字レインボー.mp4",
+  "神田清人登場.mp4",
 ];
 
 const BASE_URL = publicEnv.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
