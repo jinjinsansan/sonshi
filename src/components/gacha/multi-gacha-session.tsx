@@ -199,14 +199,16 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   }, [activeIndex, completedCount, session?.scenario]);
 
   const progressDots = useMemo(() => {
-    return Array.from({ length: totalPulls }).map((_, index) => {
+    // 映像の本数に合わせる（5連の場合は6本）
+    const totalVideos = session?.scenario?.length ?? totalPulls;
+    return Array.from({ length: totalVideos }).map((_, index) => {
       const position = index + 1;
       let state = "bg-white/10";
-      if (position <= completedCount) state = "bg-neon-blue";
+      if (position < (activeIndex ?? 0)) state = "bg-neon-blue";
       if (position === activeIndex) state = "bg-neon-yellow animate-pulse";
       return <span key={position} className={`h-2 w-2 rounded-full transition ${state}`} />;
     });
-  }, [activeIndex, completedCount, totalPulls]);
+  }, [activeIndex, session?.scenario?.length, totalPulls]);
 
   const handleStepEnd = useCallback(
     (force = false) => {
@@ -264,7 +266,9 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       return next;
     });
 
-    const finished = (activeStep?.index ?? completedCount) >= totalPulls;
+    // 全ての映像を再生してから終了（シナリオの長さを使用）
+    const totalVideos = session?.scenario?.length ?? totalPulls;
+    const finished = (activeStep?.index ?? completedCount) >= totalVideos;
     if (finished) {
       setShowSummary(true);
       setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
