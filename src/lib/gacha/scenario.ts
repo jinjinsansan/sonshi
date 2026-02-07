@@ -42,8 +42,8 @@ const VIDEO_LIBRARY: Record<Phase, Partial<Record<HeatLevel, string[]>>> = {
 const DEV_FIVE_KEYS = [
   "２秒readygo.mp4",           // 1本目: 2秒のイントロ（音声なしでOK）
   "尊師チャンスロゴ.mp4",
-  "ダブル激熱.mp4",
-  "灼熱チャンス.mp4",
+  "ダブル激熱.mp4",            // 3本目: 8.5MB
+  "それなので剛掌波.mp4",      // 4本目: 3.3MB（灼熱チャンスから変更）
   "激熱漢字レインボー.mp4",
   "伊東登場.mp4",              // 6本目: 5.1MB（神田清人登場から切り替え）
 ];
