@@ -351,12 +351,17 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
             className="absolute inset-0 h-screen w-screen object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
             playsInline
             autoPlay
-            muted
             preload="auto"
             disablePictureInPicture
             disableRemotePlayback
             onEnded={() => handleStepEnd()}
             onError={() => handleStepEnd(true)}
+            onCanPlay={(e) => {
+              const el = e.currentTarget;
+              el.muted = false;
+              const p = el.play();
+              if (p) p.catch(() => {});
+            }}
             style={{ WebkitTapHighlightColor: "transparent" }}
           />
         )}

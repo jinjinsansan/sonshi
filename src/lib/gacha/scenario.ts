@@ -38,6 +38,15 @@ const VIDEO_LIBRARY: Record<Phase, Partial<Record<HeatLevel, string[]>>> = {
   },
 };
 
+// 開発用：5連ガチャ時に固定で再生する5本（音声付き4秒映像）
+const DEV_FIVE_KEYS = [
+  "尊師チャンスロゴ.mp4",
+  "超激アツ.mp4",
+  "天国モード突入.mp4",
+  "確定イエーイ.mp4",
+  "確定.mp4",
+];
+
 const BASE_URL = publicEnv.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
 
 type DurationRange = { min: number; max: number };
@@ -120,6 +129,23 @@ function buildVideoUrl(key: string) {
 }
 
 export function buildScenario(rarities: Rarity[]): ScenarioStep[] {
+  // 開発用：5連ガチャは固定の5本を順番に再生する
+  if (rarities.length === 5) {
+    return DEV_FIVE_KEYS.map((key, idx) => {
+      const videoUrl = buildVideoUrl(`/dev-videos/${encodeURIComponent(key)}`);
+      const isFinal = idx === DEV_FIVE_KEYS.length - 1;
+      return {
+        index: idx + 1,
+        phase: isFinal ? "finale" : "mid",
+        heat: "hot",
+        rarity: rarities[idx],
+        videoKey: key,
+        durationSeconds: 4,
+        videoUrl,
+      } as ScenarioStep;
+    });
+  }
+
   return rarities.map((rarity, index) => {
     const pullNumber = index + 1;
     const phase = getPhase(pullNumber, rarities.length);
