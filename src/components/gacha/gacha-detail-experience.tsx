@@ -10,64 +10,34 @@ type Props = {
 };
 
 const GACHA_THEME_COLORS: Record<string, {
-  outerFrom: string;
-  outerVia: string;
-  outerTo: string;
-  innerFrom: string;
-  innerTo: string;
-  glowRgb: string;
-  shadowColor: string;
-  text: string;
+  ringColor: string;
+  glowColor: string;
+  ledColor: string;
 }> = {
   free: {
-    outerFrom: "#2d9bff",
-    outerVia: "#51d8ff",
-    outerTo: "#2087d4",
-    innerFrom: "#51d8ff",
-    innerTo: "#2d9bff",
-    glowRgb: "45,155,255",
-    shadowColor: "rgba(45,155,255,0.6)",
-    text: "text-[#041226]",
+    ringColor: "border-neon-blue",
+    glowColor: "shadow-neon-blue/50",
+    ledColor: "bg-neon-blue",
   },
   basic: {
-    outerFrom: "#ffb347",
-    outerVia: "#ffd161",
-    outerTo: "#e89f30",
-    innerFrom: "#ffd161",
-    innerTo: "#ffb347",
-    glowRgb: "255,177,71",
-    shadowColor: "rgba(255,177,71,0.6)",
-    text: "text-[#3b1800]",
+    ringColor: "border-amber-400",
+    glowColor: "shadow-amber-400/50",
+    ledColor: "bg-amber-400",
   },
   epic: {
-    outerFrom: "#ff2d95",
-    outerVia: "#ff4dab",
-    outerTo: "#d4247a",
-    innerFrom: "#ff4dab",
-    innerTo: "#ff2d95",
-    glowRgb: "255,45,149",
-    shadowColor: "rgba(255,45,149,0.6)",
-    text: "text-white",
+    ringColor: "border-neon-pink",
+    glowColor: "shadow-neon-pink/50",
+    ledColor: "bg-neon-pink",
   },
   premium: {
-    outerFrom: "#a855f7",
-    outerVia: "#c084fc",
-    outerTo: "#8b3fce",
-    innerFrom: "#c084fc",
-    innerTo: "#a855f7",
-    glowRgb: "168,85,247",
-    shadowColor: "rgba(168,85,247,0.6)",
-    text: "text-white",
+    ringColor: "border-neon-purple",
+    glowColor: "shadow-neon-purple/50",
+    ledColor: "bg-neon-purple",
   },
   ex: {
-    outerFrom: "#14d08f",
-    outerVia: "#36f0b7",
-    outerTo: "#0fa872",
-    innerFrom: "#36f0b7",
-    innerTo: "#14d08f",
-    glowRgb: "20,208,143",
-    shadowColor: "rgba(20,208,143,0.6)",
-    text: "text-[#032617]",
+    ringColor: "border-emerald-400",
+    glowColor: "shadow-emerald-400/50",
+    ledColor: "bg-emerald-400",
   },
 };
 
@@ -142,122 +112,111 @@ function GachaDetailExperience({ gachaId }: Props) {
   return (
     <>
       {loadingOverlay}
-      <div className="rounded-3xl border border-white/15 bg-black/30 p-8 shadow-panel-inset">
-        <div className="space-y-6">
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/60">GACHA PANEL</p>
-            <h2 className="mt-1 font-display text-2xl text-white">ガチャを始める</h2>
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 shadow-2xl">
+        {/* 筐体の上部装飾 */}
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-white/10 via-white/30 to-white/10" />
+        
+        <div className="p-6 sm:p-8">
+          <div className="mb-8 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">SLOT PANEL</p>
+            <h2 className="mt-1 font-display text-2xl text-white drop-shadow-md">ガチャ開始</h2>
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-3 text-center">
+            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-950/40 p-3 text-center">
               <p className="text-sm text-red-300">{error}</p>
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-6">
-            {/* 1連ボタン */}
-            <button
-              type="button"
-              onClick={() => startSession(1)}
-              disabled={pending}
-              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
-              style={{
-                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
-              }}
-            >
-              <div
-                className="absolute inset-2 rounded-full"
-                style={{
-                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
-                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
-                }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
-                  1
-                </span>
-                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
-                  連
-                </span>
+          {/* 黒い操作パネル（コンソール） */}
+          <div className="relative mx-auto max-w-2xl rounded-2xl bg-black border-t-2 border-white/10 shadow-[inset_0_5px_20px_rgba(0,0,0,1),0_10px_30px_rgba(0,0,0,0.5)]">
+            {/* パネルの光沢感 */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 py-10 px-4">
+              
+              {/* 1連ボタン */}
+              <div className="relative group">
+                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+                <button
+                  type="button"
+                  onClick={() => startSession(1)}
+                  disabled={pending}
+                  className="relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+                >
+                  {/* 外側リング (発光部) */}
+                  <div className={`absolute inset-0 rounded-full border-[6px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                  
+                  {/* 内側ボタン (シルバーメタリック) */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                    <span className="font-display text-5xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">1</span>
+                    <span className="text-[10px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                  </div>
+                  
+                  {/* ハイライト */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+                </button>
+                <div className="absolute -top-3 -right-2 text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">SINGLE</div>
               </div>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
-              <div
-                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
-              />
-            </button>
 
-            {/* 5連ボタン */}
-            <button
-              type="button"
-              onClick={() => startSession(5)}
-              disabled={pending}
-              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
-              style={{
-                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
-              }}
-            >
-              <div
-                className="absolute inset-2 rounded-full"
-                style={{
-                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
-                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
-                }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
-                  5
-                </span>
-                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
-                  連
-                </span>
+              {/* 5連ボタン */}
+              <div className="relative group">
+                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+                <button
+                  type="button"
+                  onClick={() => startSession(5)}
+                  disabled={pending}
+                  className="relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+                >
+                  {/* 外側リング */}
+                  <div className={`absolute inset-0 rounded-full border-[6px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                  
+                  {/* 内側ボタン */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                    <span className="font-display text-5xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">5</span>
+                    <span className="text-[10px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                  </div>
+                  
+                  {/* ハイライト */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+                </button>
+                <div className="absolute -top-3 -right-2 text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MULTI</div>
               </div>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
-              <div
-                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
-              />
-            </button>
 
-            {/* 10連ボタン */}
-            <button
-              type="button"
-              onClick={() => startSession(10)}
-              disabled={pending}
-              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
-              style={{
-                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
-              }}
-            >
-              <div
-                className="absolute inset-2 rounded-full"
-                style={{
-                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
-                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
-                }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
-                  10
-                </span>
-                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
-                  連
-                </span>
+              {/* 10連ボタン */}
+              <div className="relative group">
+                <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity ${theme.ledColor}`} />
+                <button
+                  type="button"
+                  onClick={() => startSession(10)}
+                  disabled={pending}
+                  className="relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-60"
+                >
+                  {/* 外側リング */}
+                  <div className={`absolute inset-0 rounded-full border-[6px] ${theme.ringColor} bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)] ${theme.glowColor} drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`} />
+                  
+                  {/* 内側ボタン */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_2px_5px_rgba(255,255,255,0.8),inset_0_-2px_5px_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center border border-zinc-600">
+                    <span className="font-display text-5xl font-bold text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">10</span>
+                    <span className="text-[10px] font-bold text-zinc-700 tracking-widest mt-[-2px]">REN</span>
+                  </div>
+                  
+                  {/* ハイライト */}
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+                </button>
+                <div className="absolute -top-3 -right-2 text-[10px] font-bold text-amber-400 tracking-wider drop-shadow-md">MAX</div>
               </div>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
-              <div
-                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
-              />
-            </button>
+
+            </div>
+            
+            {/* パネル下部の装飾 */}
+            <div className="absolute bottom-4 inset-x-0 text-center">
+               <p className="text-[10px] text-zinc-600 tracking-[0.5em] font-bold">PUSH BUTTON</p>
+            </div>
           </div>
-
-          <div className="text-center text-xs text-white/50">
-            <p>ボタンを押してガチャを開始</p>
+          
+          <div className="text-center text-xs text-zinc-500 mt-4">
+            <p>※ボタンを押すと演出が始まります</p>
           </div>
         </div>
       </div>
