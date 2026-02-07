@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import type { HeatLevel, Phase } from "@/lib/gacha/scenario";
 
 type ScenarioStep = {
@@ -91,6 +90,8 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const handleNextRef = useRef<(() => Promise<void>) | null>(null);
+
   useEffect(() => {
     let mounted = true;
     fetch(`/api/gacha/multi/${sessionId}`)
@@ -105,6 +106,15 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
         const current = data.currentPull ?? 0;
         setRevealed(data.results.slice(0, current));
         setShowSummary(data.status === "completed" || current >= data.totalPulls);
+        
+        // 自動的に最初のステップを開始
+        if (current === 0 && handleNextRef.current) {
+          setTimeout(() => {
+            if (mounted && handleNextRef.current) {
+              handleNextRef.current();
+            }
+          }, 500);
+        }
       })
       .catch((err: Error) => {
         if (mounted) setError(err.message);
@@ -206,35 +216,47 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
       if (!activeStep && !force) return;
 
       setIsPlaying(false);
-
-      if (queuedResult && activeStep) {
-        setRevealed((prev) => {
-          const next = [...prev];
-          next[activeStep.index - 1] = queuedResult;
-          return next;
-        });
-      }
-
-      const finished = (activeStep?.index ?? completedCount) >= totalPulls;
-      if (finished) {
-        setShowSummary(true);
-        setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
-        onFinished?.();
-      }
-
-      startFadeToCard();
+      setCanAdvance(true);
     },
-    [activeStep, completedCount, onFinished, queuedResult, totalPulls, startFadeToCard]
+    [activeStep]
   );
+
+  const handleAdvanceToCard = useCallback(() => {
+    if (!activeStep || !queuedResult) return;
+
+    setRevealed((prev) => {
+      const next = [...prev];
+      next[activeStep.index - 1] = queuedResult;
+      return next;
+    });
+
+    const finished = (activeStep?.index ?? completedCount) >= totalPulls;
+    if (finished) {
+      setShowSummary(true);
+      setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
+      onFinished?.();
+    }
+
+    startFadeToCard();
+  }, [activeStep, completedCount, onFinished, queuedResult, totalPulls, startFadeToCard]);
 
   const handleCardAcknowledge = useCallback(() => {
     setCinematicPhase(null);
     setFadeProgress(0);
     setQueuedResult(null);
     setCanAdvance(true);
-  }, []);
+    
+    // 次の演出を自動的に開始
+    if (handleNextRef.current && !isCompleted) {
+      setTimeout(() => {
+        if (handleNextRef.current) {
+          handleNextRef.current();
+        }
+      }, 300);
+    }
+  }, [isCompleted]);
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (!session || pending || isPlaying || isCompleted) return;
     setError(null);
     setPending(true);
@@ -265,7 +287,11 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
     } finally {
       setPending(false);
     }
-  };
+  }, [session, pending, isPlaying, isCompleted, sessionId, handleStepEnd]);
+
+  useEffect(() => {
+    handleNextRef.current = handleNext;
+  }, [handleNext]);
 
   const bestCard = useMemo(() => {
     const source = showSummary ? session?.results ?? [] : revealed;
@@ -296,8 +322,6 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
   }
 
   const displayResults = showSummary ? session.results : revealed;
-  const buttonDisabled = pending || isPlaying || isCompleted;
-  const buttonLabel = isCompleted ? "完了" : session.currentPull === 0 ? "START" : "NEXT";
 
   const cinematicOverlay = cinematicPhase && activeStep && typeof window !== "undefined" ? createPortal(
     <AnimatePresence>
@@ -382,7 +406,7 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
           </div>
         )}
 
-        {/* パチスロ風停止ボタン（動画再生中のみ） */}
+        {/* パチスロ風停止ボタン（動画終了後） */}
         {cinematicPhase === "video" && !isPlaying && canAdvance && (
           <motion.div
             className="absolute bottom-12 left-1/2 z-10 -translate-x-1/2"
@@ -392,9 +416,8 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
           >
             <button
               type="button"
-              onClick={handleNext}
-              disabled={buttonDisabled}
-              className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleAdvanceToCard}
+              className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95"
             >
               <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -428,16 +451,11 @@ export function MultiGachaSession({ sessionId, onFinished }: Props) {
             <div className="flex items-center gap-2">{progressDots}</div>
           </div>
 
-          <div className="mt-5 text-center">
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={buttonDisabled || !canAdvance}
-              className="relative overflow-hidden rounded-full border border-white/15 bg-gradient-to-r from-neon-pink to-neon-yellow px-8 py-4 text-sm font-semibold uppercase tracking-[0.4em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)] transition hover:brightness-105 disabled:opacity-60"
-            >
-              {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : buttonLabel}
-            </button>
-          </div>
+          {!cinematicPhase && session.currentPull > 0 && (
+            <div className="mt-5 text-center">
+              <p className="text-sm text-zinc-400">演出進行中...</p>
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">

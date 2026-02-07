@@ -14,26 +14,27 @@ export type ScenarioStep = {
   durationSeconds: number;
 };
 
+// 開発用：public/配下の実際の動画ファイル
 const VIDEO_LIBRARY: Record<Phase, Partial<Record<HeatLevel, string[]>>> = {
   intro: {
-    normal: ["intro_normal_01.mp4", "intro_normal_02.mp4", "intro_normal_03.mp4", "intro_normal_04.mp4", "intro_normal_05.mp4"],
-    hot: ["intro_hot_01.mp4", "intro_hot_02.mp4", "intro_hot_03.mp4"],
+    normal: ["/gekia-tsu.mp4"],
+    hot: ["/gekia-tsu2.mp4"],
   },
   mid: {
-    normal: ["mid_normal_01.mp4", "mid_normal_02.mp4", "mid_normal_03.mp4", "mid_normal_04.mp4", "mid_normal_05.mp4"],
-    hot: ["mid_hot_01.mp4", "mid_hot_02.mp4", "mid_hot_03.mp4"],
-    super: ["mid_super_01.mp4", "mid_super_02.mp4"],
+    normal: ["/gekia-tsu.mp4"],
+    hot: ["/gekia-tsu2.mp4"],
+    super: ["/kakutei.mp4"],
   },
   buildup: {
-    normal: ["buildup_normal_01.mp4", "buildup_normal_02.mp4", "buildup_normal_03.mp4"],
-    hot: ["buildup_hot_01.mp4", "buildup_hot_02.mp4", "buildup_hot_03.mp4"],
-    super: ["buildup_super_01.mp4", "buildup_super_02.mp4"],
+    normal: ["/gekia-tsu.mp4"],
+    hot: ["/gekia-tsu2.mp4"],
+    super: ["/kakutei.mp4"],
   },
   finale: {
-    normal: ["finale_normal_01.mp4", "finale_normal_02.mp4", "finale_normal_03.mp4"],
-    hot: ["finale_hot_01.mp4", "finale_hot_02.mp4", "finale_hot_03.mp4"],
-    super: ["finale_super_01.mp4", "finale_super_02.mp4"],
-    jackpot: ["finale_jackpot_01.mp4"],
+    normal: ["/gekia-tsu.mp4"],
+    hot: ["/gekia-tsu2.mp4"],
+    super: ["/kakutei.mp4"],
+    jackpot: ["/kakutei.mp4"],
   },
 };
 
@@ -110,7 +111,11 @@ function resolveVideoKey(phase: Phase, heat: HeatLevel) {
 }
 
 function buildVideoUrl(key: string) {
-  if (!key || !BASE_URL) return null;
+  if (!key) return null;
+  // 開発環境：keyが既に/で始まる場合はそのまま返す
+  if (key.startsWith("/")) return key;
+  // 本番環境：R2のURLを使用
+  if (!BASE_URL) return null;
   return `${BASE_URL}/${key}`;
 }
 
