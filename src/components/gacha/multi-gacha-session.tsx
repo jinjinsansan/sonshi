@@ -345,6 +345,31 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     setError(null);
     setPending(true);
     setCanAdvance(false);
+    
+    // ★ 高速化：session.scenarioから次の動画を即座に取得（API待機なし）
+    const currentPull = session.currentPull ?? 0;
+    const nextIndex = currentPull;
+    const nextScenario = session.scenario?.[nextIndex] ?? null;
+    const nextResult = session.results?.[nextIndex] ?? null;
+
+    // ★ 即座に動画を開始（API呼び出しと並行）
+    if (nextScenario) {
+      setQueuedResult(nextResult);
+      
+      if (videoRef.current && nextScenario.videoUrl) {
+        videoRef.current.src = nextScenario.videoUrl;
+        setActiveStep(nextScenario);
+      } else {
+        setActiveStep(nextScenario);
+      }
+
+      // フォールバック（動画の再生イベントが来ない場合も進行させる）
+      const durationMs = Math.max((nextScenario.durationSeconds ?? 8) * 1000, 3000);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = setTimeout(() => handleStepEnd(true), durationMs);
+    }
+
+    // ★ API呼び出しは並行実行（状態更新のみ、動画開始は待たない）
     try {
       const response = await fetch(`/api/gacha/multi/${sessionId}/next`, { method: "POST" });
       const data: NextResponse = await response.json();
@@ -353,22 +378,9 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       }
 
       setSession((prev) => (prev ? { ...prev, currentPull: data.currentPull, status: data.status } : prev));
-      setQueuedResult(data.result ?? null);
-
-      // ★ video要素のsrcだけ変更（pause()やload()は呼ばない = 軽量）
-      if (videoRef.current && data.scenario?.videoUrl) {
-        videoRef.current.src = data.scenario.videoUrl;
-        setActiveStep(data.scenario);
-      } else {
-        setActiveStep(data.scenario ?? null);
-      }
-
-      // フォールバック（動画の再生イベントが来ない場合も進行させる）
-      const durationMs = Math.max((data.scenario?.durationSeconds ?? 8) * 1000, 3000);
-      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
-      fallbackTimerRef.current = setTimeout(() => handleStepEnd(true), durationMs);
 
     } catch (err) {
+      console.error('[DEBUG] API error (non-critical):', err);
       setError(err instanceof Error ? err.message : "予期せぬエラーが発生しました");
       setCanAdvance(true);
     } finally {
