@@ -103,6 +103,12 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       })
       .then((data) => {
         if (!mounted) return;
+        console.log('[DEBUG] Session loaded:', {
+          totalPulls: data.totalPulls,
+          currentPull: data.currentPull,
+          firstVideoUrl: data.scenario?.[0]?.videoUrl
+        });
+        
         setSession(data);
         const current = data.currentPull ?? 0;
         setRevealed(data.results.slice(0, current));
@@ -111,8 +117,10 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         // 自動的に最初のステップを開始（サイトUIを表示せず直接動画へ）
         if (current === 0 && handleNextRef.current) {
           // cinematicPhaseを即座にvideoに設定してサイトUIを非表示
+          console.log('[DEBUG] Setting cinematicPhase to video');
           setCinematicPhase("video");
           setTimeout(() => {
+            console.log('[DEBUG] Calling handleNext after 100ms');
             if (mounted && handleNextRef.current) {
               handleNextRef.current();
             }
@@ -127,6 +135,17 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       mounted = false;
     };
   }, [sessionId]);
+
+  // デバッグ用：cinematicPhaseとvideoRefの状態を監視
+  useEffect(() => {
+    console.log('[DEBUG] State changed:', {
+      cinematicPhase,
+      activeStep: activeStep?.index,
+      activeStepUrl: activeStep?.videoUrl,
+      sessionFirstUrl: session?.scenario?.[0]?.videoUrl,
+      videoRefSrc: videoRef.current?.src
+    });
+  }, [cinematicPhase, activeStep, session]);
 
   const totalPulls = session?.totalPulls ?? 0;
   const completedCount = revealed.length;
@@ -207,6 +226,13 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   const handleVideoLoaded = useCallback(async (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
     
+    console.log('[DEBUG] handleVideoLoaded called:', {
+      src: video.src,
+      readyState: video.readyState,
+      networkState: video.networkState,
+      activeStep: activeStep?.index
+    });
+    
     try {
       // unmute試行
       video.muted = false;
@@ -214,18 +240,20 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       // 明示的に再生
       await video.play();
       setIsPlaying(true);
+      console.log('[DEBUG] Video play succeeded');
     } catch (err) {
-      console.warn('Video play failed, fallback to muted:', err);
+      console.warn('[DEBUG] Video play failed, fallback to muted:', err);
       // 失敗時はmutedで再生
       video.muted = true;
       try {
         await video.play();
         setIsPlaying(true);
+        console.log('[DEBUG] Video play succeeded (muted)');
       } catch (retryErr) {
-        console.error('Video play completely failed:', retryErr);
+        console.error('[DEBUG] Video play completely failed:', retryErr);
       }
     }
-  }, []);
+  }, [activeStep]);
 
   const handleAdvanceToNext = useCallback(() => {
     if (!activeStep || !queuedResult) return;
