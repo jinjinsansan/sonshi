@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { MultiGachaSession } from "@/components/gacha/multi-gacha-session";
 
@@ -59,20 +60,33 @@ function GachaDetailExperience({ gachaId }: Props) {
     );
   }
 
+  const loadingOverlay = pending && typeof window !== "undefined" ? createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-16 w-16 animate-spin text-neon-yellow" />
+        <p className="text-lg uppercase tracking-[0.4em] text-white/80">Loading...</p>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
-    <div className="rounded-3xl border border-white/15 bg-black/30 p-5 text-center shadow-panel-inset">
-      <h2 className="font-display text-xl text-white">10連演出を体験</h2>
-      <p className="mt-1 text-sm text-zinc-300">NEXTで進む演出→結果排出（開発用デモカード/映像）</p>
-      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-      <button
-        type="button"
-        onClick={startSession}
-        disabled={pending}
-        className="mt-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-[11px] uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)] disabled:opacity-60"
-      >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "10連を始める"}
-      </button>
-    </div>
+    <>
+      {loadingOverlay}
+      <div className="rounded-3xl border border-white/15 bg-black/30 p-5 text-center shadow-panel-inset">
+        <h2 className="font-display text-xl text-white">10連演出を体験</h2>
+        <p className="mt-1 text-sm text-zinc-300">NEXTで進む演出→結果排出（開発用デモカード/映像）</p>
+        {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+        <button
+          type="button"
+          onClick={startSession}
+          disabled={pending}
+          className="mt-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-[11px] uppercase tracking-[0.35em] text-black shadow-[0_0_18px_rgba(255,246,92,0.35)] disabled:opacity-60"
+        >
+          10連を始める
+        </button>
+      </div>
+    </>
   );
 }
 

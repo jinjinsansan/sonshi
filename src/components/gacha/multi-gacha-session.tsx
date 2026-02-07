@@ -72,7 +72,7 @@ type Props = {
   fullscreenMode?: boolean;
 };
 
-type CinematicPhase = "video" | "fade" | "card";
+type CinematicPhase = "video" | "card";
 
 export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = false }: Props) {
   const [session, setSession] = useState<SessionResponse | null>(null);
@@ -213,23 +213,28 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     if (finished) {
       setShowSummary(true);
       setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
-      setCinematicPhase(null);
+      setCinematicPhase("card");
       onFinished?.();
     } else {
-      // 次の動画へ進む
-      setCinematicPhase(null);
+      // 次の動画へ進む（cinematicPhaseはvideoのまま維持）
       setQueuedResult(null);
       setCanAdvance(true);
       
       if (handleNextRef.current) {
-        setTimeout(() => {
-          if (handleNextRef.current) {
-            handleNextRef.current();
-          }
-        }, 300);
+        handleNextRef.current();
       }
     }
   }, [activeStep, completedCount, onFinished, queuedResult, totalPulls]);
+
+  const handleSkip = useCallback(() => {
+    // 全ての動画をスキップしてカード表示へ
+    const remainingResults = session?.results || [];
+    setRevealed(remainingResults);
+    setShowSummary(true);
+    setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
+    setCinematicPhase("card");
+    onFinished?.();
+  }, [session, totalPulls, onFinished]);
 
 
 
@@ -338,11 +343,12 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         {/* パチスロ風停止ボタン（動画終了後） */}
         {cinematicPhase === "video" && !isPlaying && canAdvance && (
           <motion.div
-            className="absolute bottom-12 left-1/2 z-10 -translate-x-1/2"
+            className="absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 items-center gap-6"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
+            {/* NEXTボタン */}
             <button
               type="button"
               onClick={handleAdvanceToNext}
@@ -360,7 +366,74 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
               <div className="absolute -inset-2 animate-pulse rounded-full bg-red-500/30 blur-xl group-hover:bg-red-500/50" />
             </button>
+
+            {/* SKIPボタン */}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="group relative h-32 w-32 rounded-full bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 shadow-[0_8px_32px_rgba(217,119,6,0.6),0_0_80px_rgba(217,119,6,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(217,119,6,0.8),0_0_100px_rgba(217,119,6,0.6)] active:scale-95"
+            >
+              <div className="absolute inset-2 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  SKIP
+                </span>
+                <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                  全省略
+                </span>
+              </div>
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
+              <div className="absolute -inset-2 animate-pulse rounded-full bg-amber-500/30 blur-xl group-hover:bg-amber-500/50" />
+            </button>
           </motion.div>
+        )}
+
+        {/* カード表示（全演出終了後またはスキップ後） */}
+        {cinematicPhase === "card" && showSummary && (
+          <div className="relative z-20 flex h-full flex-col items-center justify-center bg-black px-6">
+            <motion.div
+              className="flex w-full max-w-4xl flex-col items-center gap-8 text-white"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <p className="text-sm uppercase tracking-[0.6em] text-white/60">10連結果</p>
+              
+              {bestCard && (
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <p className="font-display text-6xl tracking-wide">{bestCard.name}</p>
+                  <div className="flex items-center gap-4">
+                    <span className="rounded-full border border-neon-yellow/50 bg-neon-yellow/10 px-8 py-3 text-2xl tracking-[0.4em]">
+                      {RARITY_LABELS[bestCard.rarity] ?? bestCard.rarity}
+                    </span>
+                    {bestCard.serialNumber && (
+                      <span className="text-xl text-white/70">#{bestCard.serialNumber}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 grid w-full max-w-2xl gap-3 sm:grid-cols-5">
+                {Object.entries(RARITY_LABELS).map(([rarity, label]) => (
+                  <div key={rarity} className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center">
+                    <p className="text-lg font-semibold text-white">{label}</p>
+                    <p className="mt-1 text-2xl text-neon-yellow">{rarityCounts[rarity] ?? 0}</p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCinematicPhase(null);
+                  if (onFinished) onFinished();
+                }}
+                className="mt-8 rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-16 py-5 text-lg font-semibold uppercase tracking-[0.4em] text-black shadow-[0_0_40px_rgba(255,246,92,0.6)] transition hover:brightness-110"
+              >
+                結果を見る
+              </button>
+            </motion.div>
+          </div>
         )}
       </motion.div>
     </AnimatePresence>,
@@ -371,7 +444,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     <>
       {cinematicOverlay}
       
-      {!fullscreenMode && (
+      {!fullscreenMode && !cinematicPhase && (
         <div className="space-y-6">
           <div className="rounded-3xl border border-white/10 bg-hall-panel/80 p-6 shadow-panel-inset">
             <div className="flex items-center justify-between">
