@@ -10,39 +10,57 @@ type Props = {
 };
 
 const GACHA_THEME_COLORS: Record<string, {
-  primary: string;
-  secondary: string;
-  glow: string;
+  outerFrom: string;
+  outerVia: string;
+  outerTo: string;
+  innerFrom: string;
+  innerTo: string;
+  glowColor: string;
   text: string;
 }> = {
   free: {
-    primary: "from-[#51d8ff] to-[#2d9bff]",
-    secondary: "from-[#3aa3d4] to-[#1f7ab8]",
-    glow: "rgba(81,216,255,0.6)",
+    outerFrom: "#2d9bff",
+    outerVia: "#51d8ff",
+    outerTo: "#2d9bff",
+    innerFrom: "#51d8ff",
+    innerTo: "#3aa3d4",
+    glowColor: "81,216,255",
     text: "text-[#041226]",
   },
   basic: {
-    primary: "from-[#ffd161] to-[#ffb347]",
-    secondary: "from-[#d4a944] to-[#b8882f]",
-    glow: "rgba(255,177,71,0.6)",
+    outerFrom: "#ffb347",
+    outerVia: "#ffd161",
+    outerTo: "#ffb347",
+    innerFrom: "#ffd161",
+    innerTo: "#d4a944",
+    glowColor: "255,177,71",
     text: "text-[#3b1800]",
   },
   epic: {
-    primary: "from-[#ff4dab] to-[#ff2d95]",
-    secondary: "from-[#d43886] to-[#b81f6e]",
-    glow: "rgba(255,77,171,0.6)",
+    outerFrom: "#ff2d95",
+    outerVia: "#ff4dab",
+    outerTo: "#ff2d95",
+    innerFrom: "#ff4dab",
+    innerTo: "#d43886",
+    glowColor: "255,77,171",
     text: "text-white",
   },
   premium: {
-    primary: "from-[#c084fc] to-[#a855f7]",
-    secondary: "from-[#9d6ac8] to-[#8340c4]",
-    glow: "rgba(168,85,247,0.6)",
-    text: "text-[#210035]",
+    outerFrom: "#a855f7",
+    outerVia: "#c084fc",
+    outerTo: "#a855f7",
+    innerFrom: "#c084fc",
+    innerTo: "#9d6ac8",
+    glowColor: "168,85,247",
+    text: "text-white",
   },
   ex: {
-    primary: "from-[#36f0b7] to-[#14d08f]",
-    secondary: "from-[#2bbf92] to-[#0fa26e]",
-    glow: "rgba(20,208,143,0.6)",
+    outerFrom: "#14d08f",
+    outerVia: "#36f0b7",
+    outerTo: "#14d08f",
+    innerFrom: "#36f0b7",
+    innerTo: "#2bbf92",
+    glowColor: "20,208,143",
     text: "text-[#032617]",
   },
 };
@@ -131,86 +149,104 @@ function GachaDetailExperience({ gachaId }: Props) {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            {/* 1連ガチャボタン */}
+          <div className="flex items-center justify-center gap-4">
+            {/* 1連ボタン */}
             <button
               type="button"
               onClick={() => startSession(1)}
               disabled={pending}
-              className="group relative overflow-hidden rounded-3xl transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              style={{
+                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
+                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+              }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-b ${theme.primary} opacity-90`} />
-              <div className={`absolute inset-0 bg-gradient-to-t ${theme.secondary} opacity-50`} />
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/40" />
-              <div className={`absolute -inset-1 bg-gradient-to-r ${theme.primary} blur-xl opacity-60 group-hover:opacity-80`} />
-              
-              <div className="relative flex flex-col items-center justify-center px-6 py-8">
-                <div className={`font-display text-5xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+              <div
+                className="absolute inset-2 rounded-full"
+                style={{
+                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
+                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   1
-                </div>
-                <div className={`mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                </span>
+                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
-                </div>
-                <div className="mt-3 text-[10px] uppercase tracking-[0.35em] text-white/80">
-                  SINGLE
-                </div>
+                </span>
               </div>
-              
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
+              <div
+                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
+                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+              />
             </button>
 
-            {/* 5連ガチャボタン */}
+            {/* 5連ボタン */}
             <button
               type="button"
               onClick={() => startSession(5)}
               disabled={pending}
-              className="group relative overflow-hidden rounded-3xl transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              style={{
+                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
+                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+              }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-b ${theme.primary} opacity-90`} />
-              <div className={`absolute inset-0 bg-gradient-to-t ${theme.secondary} opacity-50`} />
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/40" />
-              <div className={`absolute -inset-1 bg-gradient-to-r ${theme.primary} blur-xl opacity-60 group-hover:opacity-80`} />
-              
-              <div className="relative flex flex-col items-center justify-center px-6 py-8">
-                <div className={`font-display text-5xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+              <div
+                className="absolute inset-2 rounded-full"
+                style={{
+                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
+                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   5
-                </div>
-                <div className={`mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                </span>
+                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
-                </div>
-                <div className="mt-3 text-[10px] uppercase tracking-[0.35em] text-white/80">
-                  MULTI
-                </div>
+                </span>
               </div>
-              
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
+              <div
+                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
+                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+              />
             </button>
 
-            {/* 10連ガチャボタン */}
+            {/* 10連ボタン */}
             <button
               type="button"
               onClick={() => startSession(10)}
               disabled={pending}
-              className="group relative overflow-hidden rounded-3xl transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              style={{
+                background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
+                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+              }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-b ${theme.primary} opacity-90`} />
-              <div className={`absolute inset-0 bg-gradient-to-t ${theme.secondary} opacity-50`} />
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/40" />
-              <div className={`absolute -inset-1 bg-gradient-to-r ${theme.primary} blur-xl opacity-60 group-hover:opacity-80`} />
-              
-              <div className="relative flex flex-col items-center justify-center px-6 py-8">
-                <div className={`font-display text-5xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+              <div
+                className="absolute inset-2 rounded-full"
+                style={{
+                  background: `linear-gradient(to bottom, ${theme.innerFrom}, ${theme.innerTo})`,
+                  boxShadow: 'inset 0 2px 12px rgba(255,255,255,0.4), inset 0 -2px 8px rgba(0,0,0,0.3)',
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   10
-                </div>
-                <div className={`mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                </span>
+                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
-                </div>
-                <div className="mt-3 text-[10px] uppercase tracking-[0.35em] text-white/80">
-                  PREMIUM
-                </div>
+                </span>
               </div>
-              
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
+              <div
+                className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
+                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+              />
             </button>
           </div>
 
