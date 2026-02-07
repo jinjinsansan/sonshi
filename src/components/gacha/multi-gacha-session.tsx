@@ -234,8 +234,8 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     } else {
       // 次の動画へ進む（cinematicPhaseはvideoのまま維持）
       setQueuedResult(null);
-      setCanAdvance(true);
-      setActiveStep(null); // activeStepをリセットして次の動画をロード
+      setCanAdvance(false);
+      // activeStep は維持しておき、次のシナリオ取得後に差し替える（黒画面を防ぐ）
       
       if (handleNextRef.current) {
         handleNextRef.current();
