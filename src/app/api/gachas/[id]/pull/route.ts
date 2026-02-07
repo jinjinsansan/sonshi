@@ -115,21 +115,23 @@ export async function POST(
     return NextResponse.json({ error: balanceError.message }, { status: 500 });
   }
 
-  let ticketQuantity = balance?.quantity ?? 0;
-  if (!balance || ticketQuantity < repeat) {
-    ticketQuantity = Math.max(ticketQuantity, repeat);
+  if (isFreeUser) {
     const { error: upsertError } = await serviceSupabase.from("user_tickets").upsert(
       {
         id: balance?.id,
         user_id: user.id,
         ticket_type_id: gacha.ticket_type_id,
-        quantity: ticketQuantity,
+        quantity: 9999,
       },
       { onConflict: "user_id,ticket_type_id" }
     );
 
     if (upsertError) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    }
+  } else {
+    if (!balance || (balance.quantity ?? 0) < repeat) {
+      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
     }
   }
 
@@ -244,8 +246,19 @@ export async function POST(
     });
   }
 
-  if (!isFreeUser) {
-    const newQuantity = ticketQuantity - repeat;
+  if (isFreeUser) {
+    await serviceSupabase.from("user_tickets").upsert(
+      {
+        id: balance?.id,
+        user_id: user.id,
+        ticket_type_id: gacha.ticket_type_id,
+        quantity: 9999,
+      },
+      { onConflict: "user_id,ticket_type_id" }
+    );
+  } else {
+    const currentQuantity = balance?.quantity ?? 0;
+    const newQuantity = currentQuantity - repeat;
     const { error: ticketUpdateError } = await serviceSupabase
       .from("user_tickets")
       .update({ quantity: newQuantity })
@@ -302,6 +315,6 @@ export async function POST(
   return NextResponse.json({
     ticket: gacha.ticket_types?.name ?? gacha.name,
     results,
-    remaining: isFreeUser ? balance?.quantity ?? repeat : Math.max(ticketQuantity - repeat, 0),
+    remaining: isFreeUser ? 9999 : Math.max((balance?.quantity ?? 0) - repeat, 0),
   });
 }

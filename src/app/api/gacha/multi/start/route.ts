@@ -125,19 +125,21 @@ export async function POST(request: NextRequest) {
   }
 
   const originalBalance = balance?.quantity ?? 0;
-  let ticketQuantity = originalBalance;
 
-  if (!balance || ticketQuantity < totalPulls) {
-    ticketQuantity = Math.max(ticketQuantity, totalPulls);
+  if (isFreeUser) {
     await serviceSupabase.from("user_tickets").upsert(
       {
         id: balance?.id,
         user_id: user.id,
         ticket_type_id: gacha.ticket_type_id,
-        quantity: ticketQuantity,
+        quantity: 9999,
       },
       { onConflict: "user_id,ticket_type_id" }
     );
+  } else {
+    if (!balance || originalBalance < totalPulls) {
+      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
+    }
   }
 
   const { data: cards, error: cardsError } = await serviceSupabase
@@ -288,7 +290,7 @@ export async function POST(request: NextRequest) {
         id: balance?.id,
         user_id: user.id,
         ticket_type_id: gacha.ticket_type_id,
-        quantity: originalBalance,
+        quantity: 9999,
       },
       { onConflict: "user_id,ticket_type_id" }
     );
@@ -299,8 +301,6 @@ export async function POST(request: NextRequest) {
     totalPulls,
     currentPull: 0,
     status: "in_progress",
-    remaining: isFreeUser
-      ? originalBalance
-      : payload.remaining_quantity ?? Math.max(ticketQuantity - totalPulls, 0),
+    remaining: isFreeUser ? 9999 : payload.remaining_quantity ?? 0,
   });
 }
