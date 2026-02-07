@@ -15,52 +15,58 @@ const GACHA_THEME_COLORS: Record<string, {
   outerTo: string;
   innerFrom: string;
   innerTo: string;
-  glowColor: string;
+  glowRgb: string;
+  shadowColor: string;
   text: string;
 }> = {
   free: {
     outerFrom: "#2d9bff",
     outerVia: "#51d8ff",
-    outerTo: "#2d9bff",
+    outerTo: "#2087d4",
     innerFrom: "#51d8ff",
-    innerTo: "#3aa3d4",
-    glowColor: "81,216,255",
+    innerTo: "#2d9bff",
+    glowRgb: "45,155,255",
+    shadowColor: "rgba(45,155,255,0.6)",
     text: "text-[#041226]",
   },
   basic: {
     outerFrom: "#ffb347",
     outerVia: "#ffd161",
-    outerTo: "#ffb347",
+    outerTo: "#e89f30",
     innerFrom: "#ffd161",
-    innerTo: "#d4a944",
-    glowColor: "255,177,71",
+    innerTo: "#ffb347",
+    glowRgb: "255,177,71",
+    shadowColor: "rgba(255,177,71,0.6)",
     text: "text-[#3b1800]",
   },
   epic: {
     outerFrom: "#ff2d95",
     outerVia: "#ff4dab",
-    outerTo: "#ff2d95",
+    outerTo: "#d4247a",
     innerFrom: "#ff4dab",
-    innerTo: "#d43886",
-    glowColor: "255,77,171",
+    innerTo: "#ff2d95",
+    glowRgb: "255,45,149",
+    shadowColor: "rgba(255,45,149,0.6)",
     text: "text-white",
   },
   premium: {
     outerFrom: "#a855f7",
     outerVia: "#c084fc",
-    outerTo: "#a855f7",
+    outerTo: "#8b3fce",
     innerFrom: "#c084fc",
-    innerTo: "#9d6ac8",
-    glowColor: "168,85,247",
+    innerTo: "#a855f7",
+    glowRgb: "168,85,247",
+    shadowColor: "rgba(168,85,247,0.6)",
     text: "text-white",
   },
   ex: {
     outerFrom: "#14d08f",
     outerVia: "#36f0b7",
-    outerTo: "#14d08f",
+    outerTo: "#0fa872",
     innerFrom: "#36f0b7",
-    innerTo: "#2bbf92",
-    glowColor: "20,208,143",
+    innerTo: "#14d08f",
+    glowRgb: "20,208,143",
+    shadowColor: "rgba(20,208,143,0.6)",
     text: "text-[#032617]",
   },
 };
@@ -149,16 +155,16 @@ function GachaDetailExperience({ gachaId }: Props) {
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-6">
             {/* 1連ボタン */}
             <button
               type="button"
               onClick={() => startSession(1)}
               disabled={pending}
-              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
               style={{
                 background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
               }}
             >
               <div
@@ -169,17 +175,17 @@ function GachaDetailExperience({ gachaId }: Props) {
                 }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   1
                 </span>
-                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
                 </span>
               </div>
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
               <div
                 className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
               />
             </button>
 
@@ -188,10 +194,10 @@ function GachaDetailExperience({ gachaId }: Props) {
               type="button"
               onClick={() => startSession(5)}
               disabled={pending}
-              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
               style={{
                 background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
               }}
             >
               <div
@@ -202,17 +208,17 @@ function GachaDetailExperience({ gachaId }: Props) {
                 }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   5
                 </span>
-                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
                 </span>
               </div>
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
               <div
                 className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
               />
             </button>
 
@@ -221,10 +227,10 @@ function GachaDetailExperience({ gachaId }: Props) {
               type="button"
               onClick={() => startSession(10)}
               disabled={pending}
-              className="group relative h-36 w-36 rounded-full transition-all active:scale-95 disabled:opacity-60"
+              className="group relative h-40 w-40 rounded-full transition-all active:scale-95 disabled:opacity-60"
               style={{
                 background: `linear-gradient(to bottom, ${theme.outerFrom}, ${theme.outerVia}, ${theme.outerTo})`,
-                boxShadow: `0 8px 32px rgba(${theme.glowColor},0.6), 0 0 80px rgba(${theme.glowColor},0.4), inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
+                boxShadow: `0 8px 32px ${theme.shadowColor}, 0 0 80px ${theme.shadowColor}, inset 0 2px 8px rgba(255,255,255,0.3), inset 0 -4px 12px rgba(0,0,0,0.4)`,
               }}
             >
               <div
@@ -235,17 +241,17 @@ function GachaDetailExperience({ gachaId }: Props) {
                 }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`relative z-10 font-display text-5xl font-bold uppercase tracking-[0.2em] ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
+                <span className={`relative z-10 font-display text-6xl font-bold ${theme.text} drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
                   10
                 </span>
-                <span className={`relative z-10 mt-1 text-xs uppercase tracking-[0.3em] ${theme.text} opacity-90`}>
+                <span className={`relative z-10 text-xs tracking-[0.3em] ${theme.text} opacity-90`}>
                   連
                 </span>
               </div>
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/20" />
               <div
                 className="absolute -inset-2 animate-pulse rounded-full blur-xl group-hover:opacity-70"
-                style={{ background: `rgba(${theme.glowColor},0.3)` }}
+                style={{ background: `rgba(${theme.glowRgb},0.3)` }}
               />
             </button>
           </div>
