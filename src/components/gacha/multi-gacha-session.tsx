@@ -67,9 +67,10 @@ const RARITY_COLOR: Record<string, string> = {
 
 type Props = {
   sessionId: string;
+  onFinished?: () => void;
 };
 
-export function MultiGachaSession({ sessionId }: Props) {
+export function MultiGachaSession({ sessionId, onFinished }: Props) {
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [revealed, setRevealed] = useState<DrawResult[]>([]);
   const [activeStep, setActiveStep] = useState<ScenarioStep | null>(null);
@@ -194,9 +195,10 @@ export function MultiGachaSession({ sessionId }: Props) {
       if (finished) {
         setShowSummary(true);
         setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
+        onFinished?.();
       }
     },
-    [activeStep, completedCount, queuedResult, totalPulls]
+    [activeStep, completedCount, onFinished, queuedResult, totalPulls]
   );
 
   const handleNext = async () => {
