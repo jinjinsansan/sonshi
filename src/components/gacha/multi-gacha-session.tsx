@@ -158,6 +158,12 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       if (fallbackTimerRef.current) {
         clearTimeout(fallbackTimerRef.current);
       }
+      // コンポーネントアンマウント時にvideo要素をクリーンアップ
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = '';
+        videoRef.current.load();
+      }
     };
   }, []);
 
@@ -273,6 +279,13 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     const totalVideos = session?.scenario?.length ?? totalPulls;
     const finished = (activeStep?.index ?? completedCount) >= totalVideos;
     if (finished) {
+      // video要素のメモリを解放
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = '';
+        videoRef.current.load();
+      }
+      
       setShowSummary(true);
       setSession((prev) => (prev ? { ...prev, status: "completed", currentPull: totalPulls } : prev));
       // 最後の動画終了後、フェードアウト開始
