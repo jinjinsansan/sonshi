@@ -258,13 +258,16 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   }, [activeStep]);
 
   const handleAdvanceToNext = useCallback(() => {
-    if (!activeStep || !queuedResult) return;
+    if (!activeStep) return;
 
-    setRevealed((prev) => {
-      const next = [...prev];
-      next[activeStep.index - 1] = queuedResult;
-      return next;
-    });
+    // queuedResultがある場合のみrevealed配列を更新（イントロ映像はresultなし）
+    if (queuedResult) {
+      setRevealed((prev) => {
+        const next = [...prev];
+        next[activeStep.index - 1] = queuedResult;
+        return next;
+      });
+    }
 
     // 全ての映像を再生してから終了（シナリオの長さを使用）
     const totalVideos = session?.scenario?.length ?? totalPulls;

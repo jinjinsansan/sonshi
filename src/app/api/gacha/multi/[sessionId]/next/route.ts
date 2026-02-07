@@ -33,7 +33,10 @@ export async function POST(
   const results = Array.isArray(session.results) ? session.results : [];
   const scenario = Array.isArray(session.scenario_path) ? session.scenario_path : [];
 
-  if (currentPull >= totalPulls) {
+  // シナリオの実際の長さを使用（5連ガチャは6本の映像になる）
+  const totalVideos = scenario.length > 0 ? scenario.length : totalPulls;
+
+  if (currentPull >= totalVideos) {
     return NextResponse.json({
       done: true,
       status: session.status ?? "completed",
@@ -46,7 +49,7 @@ export async function POST(
   const nextIndex = currentPull + 1;
   const nextResult = results[nextIndex - 1] ?? null;
   const nextScenario = scenario[nextIndex - 1] ?? null;
-  const isFinal = nextIndex >= totalPulls;
+  const isFinal = nextIndex >= totalVideos;
   const nextStatus = isFinal ? "completed" : "in_progress";
 
   const updatePayload: Record<string, unknown> = {
