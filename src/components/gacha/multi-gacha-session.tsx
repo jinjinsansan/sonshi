@@ -89,6 +89,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   const prefetchCache = useRef(new Set<string>());
   const preconnectCache = useRef(new Set<string>());
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const handleNextRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -203,6 +204,29 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
     [activeStep]
   );
 
+  const handleVideoLoaded = useCallback(async (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    
+    try {
+      // unmute試行
+      video.muted = false;
+      
+      // 明示的に再生
+      await video.play();
+      setIsPlaying(true);
+    } catch (err) {
+      console.warn('Video play failed, fallback to muted:', err);
+      // 失敗時はmutedで再生
+      video.muted = true;
+      try {
+        await video.play();
+        setIsPlaying(true);
+      } catch (retryErr) {
+        console.error('Video play completely failed:', retryErr);
+      }
+    }
+  }, []);
+
   const handleAdvanceToNext = useCallback(() => {
     if (!activeStep || !queuedResult) return;
 
@@ -281,18 +305,21 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
       }
 
       setSession((prev) => (prev ? { ...prev, currentPull: data.currentPull, status: data.status } : prev));
-      setActiveStep(data.scenario ?? null);
       setQueuedResult(data.result ?? null);
+
+      // ★ video要素のsrcだけ変更（pause()やload()は呼ばない = 軽量）
+      if (videoRef.current && data.scenario?.videoUrl) {
+        videoRef.current.src = data.scenario.videoUrl;
+        setActiveStep(data.scenario);
+      } else {
+        setActiveStep(data.scenario ?? null);
+      }
 
       // フォールバック（動画の再生イベントが来ない場合も進行させる）
       const durationMs = Math.max((data.scenario?.durationSeconds ?? 8) * 1000, 3000);
       if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
       fallbackTimerRef.current = setTimeout(() => handleStepEnd(true), durationMs);
 
-      if (data.scenario?.videoUrl) {
-        setIsPlaying(true);
-        setCinematicPhase("video");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "予期せぬエラーが発生しました");
       setCanAdvance(true);
@@ -346,22 +373,17 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         {/* 全画面動画 */}
         {cinematicPhase === "video" && activeStep?.videoUrl && (
           <video
-            key={`video-${activeStep.index}`}
+            ref={videoRef}
             src={activeStep.videoUrl}
             className="absolute inset-0 h-screen w-screen object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden [&::-webkit-media-controls-panel]:hidden"
             playsInline
-            autoPlay
+            muted
             preload="auto"
             disablePictureInPicture
             disableRemotePlayback
+            onLoadedData={handleVideoLoaded}
             onEnded={() => handleStepEnd()}
             onError={() => handleStepEnd(true)}
-            onCanPlay={(e) => {
-              const el = e.currentTarget;
-              el.muted = false;
-              const p = el.play();
-              if (p) p.catch(() => {});
-            }}
             style={{ WebkitTapHighlightColor: "transparent" }}
           />
         )}
