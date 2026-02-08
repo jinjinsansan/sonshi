@@ -45,6 +45,7 @@ const serverSchema = z.object({
   LINE_CHANNEL_SECRET: z.string().optional(),
   LINE_ADD_FRIEND_URL: z.string().url().optional(),
   ADMIN_EMAILS: z.string().optional(),
+  GACHA_V2_ENABLED: z.coerce.boolean().optional(),
 });
 
 export const publicEnv = publicSchema.parse({
@@ -78,5 +79,6 @@ export function getServerEnv() {
     LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET,
     LINE_ADD_FRIEND_URL: process.env.LINE_ADD_FRIEND_URL,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+    GACHA_V2_ENABLED: process.env.GACHA_V2_ENABLED,
   });
 }

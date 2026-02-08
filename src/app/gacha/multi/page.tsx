@@ -1,8 +1,15 @@
+import { redirect } from "next/navigation";
 import { MultiGachaLobby } from "@/components/gacha/multi-gacha-lobby";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import { fetchGachaCatalog } from "@/lib/utils/gacha";
+import { getServerEnv } from "@/lib/env";
 
 export default async function MultiGachaPage() {
+  const { GACHA_V2_ENABLED } = getServerEnv();
+  if (GACHA_V2_ENABLED) {
+    redirect("/gacha");
+  }
+
   const catalog = await fetchGachaCatalog().catch(() => GACHA_DEFINITIONS);
   const gachas = catalog.length > 0 ? catalog : GACHA_DEFINITIONS;
 

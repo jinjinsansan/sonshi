@@ -1,10 +1,17 @@
+import { redirect } from "next/navigation";
 import { MultiGachaSession } from "@/components/gacha/multi-gacha-session";
+import { getServerEnv } from "@/lib/env";
 
 type Params = {
   params: Promise<{ sessionId: string }>;
 };
 
 export default async function MultiGachaSessionPage({ params }: Params) {
+  const { GACHA_V2_ENABLED } = getServerEnv();
+  if (GACHA_V2_ENABLED) {
+    redirect("/gacha");
+  }
+
   const resolved = await params;
   const sessionId = resolved.sessionId;
 

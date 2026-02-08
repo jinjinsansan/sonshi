@@ -83,6 +83,7 @@ export function MultiGachaDevFive() {
           <h3 className="text-xl font-semibold">獲得カード</h3>
           <div className="flex flex-col items-center gap-3">
             <div className="rounded-2xl border border-white/20 bg-white/5 p-4">
+              {/* dev-only stub image; replace with next/image when asset fixed */}
               <img src={DEMO_CARD.imageUrl} alt={DEMO_CARD.name} className="h-40 w-32 object-contain" />
             </div>
             <p className="text-lg font-bold">{DEMO_CARD.name}</p>

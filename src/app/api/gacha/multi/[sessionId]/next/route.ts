@@ -1,11 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRequestAuthUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
+import { getServerEnv } from "@/lib/env";
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ sessionId: string }> }
 ) {
+  const { GACHA_V2_ENABLED } = getServerEnv();
+  if (GACHA_V2_ENABLED) {
+    return NextResponse.json({ error: "Disabled" }, { status: 404 });
+  }
+
   const user = await getRequestAuthUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -154,15 +154,15 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
   const activeIndex = activeStep?.index ?? null;
 
   useEffect(() => {
+    const node = videoRef.current;
     return () => {
       if (fallbackTimerRef.current) {
         clearTimeout(fallbackTimerRef.current);
       }
-      // コンポーネントアンマウント時にvideo要素をクリーンアップ
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.src = '';
-        videoRef.current.load();
+      if (node) {
+        node.pause();
+        node.src = "";
+        node.load();
       }
     };
   }, []);
@@ -202,7 +202,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         // ignore invalid URLs
       }
     });
-  }, [activeIndex, completedCount, session?.scenario]);
+  }, [activeIndex, completedCount, session?.scenario, session?.scenario?.length]);
 
   const progressDots = useMemo(() => {
     // 映像の本数に合わせる（5連の場合は6本）
@@ -313,7 +313,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
         handleNextRef.current();
       }
     }
-  }, [activeStep, completedCount, onFinished, queuedResult, totalPulls]);
+  }, [activeStep, completedCount, onFinished, queuedResult, totalPulls, session?.scenario?.length]);
 
   const handleSkip = useCallback(() => {
     // 全ての動画をスキップしてカード表示へ
@@ -535,6 +535,7 @@ export function MultiGachaSession({ sessionId, onFinished, fullscreenMode = fals
                 <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-3xl border border-white/20 bg-white/10 p-4">
                   <div className="relative w-full overflow-hidden rounded-2xl bg-black/30">
                     <div className="relative aspect-[3/4] w-full">
+                      {/* dev-only img placeholder; replace with next/image when final assets ready */}
                       <img
                         src={bestCard.imageUrl}
                         alt={bestCard.name}

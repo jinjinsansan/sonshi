@@ -4,6 +4,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { buildRarityWeights, pickRarity } from "@/lib/gacha/pool";
 import { isRarityAtOrBelow } from "@/lib/gacha/rarity";
 import { canonicalizeGachaId, gachaIdMatches } from "@/lib/utils/gacha";
+import { getServerEnv } from "@/lib/env";
 import type { Database } from "@/types/database";
 
 const FREE_USER_EMAIL = "goldbenchan@gmail.com";
@@ -65,6 +66,11 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const { GACHA_V2_ENABLED } = getServerEnv();
+  if (GACHA_V2_ENABLED) {
+    return NextResponse.json({ error: "Disabled" }, { status: 404 });
+  }
+
   const { id } = await context.params;
   const resolvedSlug = canonicalizeGachaId(id) ?? id.toLowerCase();
   const body = await request.json().catch(() => ({ repeat: 1 }));

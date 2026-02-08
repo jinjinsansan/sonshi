@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import GachaDetailExperience from "@/components/gacha/gacha-detail-experience";
-import { GachaHistory } from "@/components/gacha/gacha-history";
 import { GACHA_DEFINITIONS } from "@/constants/gacha";
 import {
   buildGachaSearchKey,
@@ -8,6 +6,7 @@ import {
   fetchGachaCatalog,
   gachaIdMatches,
 } from "@/lib/utils/gacha";
+import { GachaV2Player } from "@/components/gacha/gacha-v2-player";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -147,10 +146,8 @@ export default async function GachaDetailPage({ params }: Params) {
             <span>必要チケット: {theme.ticketLabel}</span>
           </div>
         </div>
-        <GachaDetailExperience gachaId={resolvedGachaId} />
+        <GachaV2Player />
       </article>
-
-      <GachaHistory title="直近のガチャ履歴" limit={10} />
     </section>
   );
 }

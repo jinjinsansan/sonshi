@@ -24,6 +24,21 @@ const shortcuts = [
     href: "/admin/probability",
   },
   {
+    title: "RTP設定",
+    description: "★1〜12の出現比率を編集",
+    href: "/admin/rtp",
+  },
+  {
+    title: "どんでん返し設定",
+    description: "win / small_win / lose の比率",
+    href: "/admin/donden",
+  },
+  {
+    title: "追撃設定",
+    description: "★10〜12の追撃成功率と枚数",
+    href: "/admin/tsuigeki",
+  },
+  {
     title: "統計",
     description: "KPIと直近の排出データ",
     href: "/admin/stats",
@@ -64,7 +79,7 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {shortcuts.map((item) => (
           <Link
             key={item.href}
