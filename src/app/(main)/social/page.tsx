@@ -1,25 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/session";
+import { Users2, Image as ImageIcon, Award } from "lucide-react";
 
 const roadmap = [
   {
-    title: "タイムライン",
-    description: "獲得カードや神引き演出を自動で共有。ハイライトをピン留めして仲間にアピール。",
+    title: "フレンド / タイムライン",
+    description: "UMAのフレンド申請・タイムラインを尊師ガチャ向けに移植中。ガチャ演出のハイライトを自動共有。",
     status: "NEXT",
-    badgeColor: "text-neon-yellow",
+    icon: Users2,
   },
   {
     title: "カードシェア",
-    description: "手持ちカードを並べてSNS用のスクショをワンクリ生成。背景テンプレとロゴを合成。",
+    description: "所持カードを並べてSNS用スクショを生成。UMAのシェア機能をベースに背景テンプレも用意予定。",
     status: "NEXT",
-    badgeColor: "text-neon-pink",
+    icon: ImageIcon,
   },
   {
     title: "ランキング",
-    description: "UR獲得・連続完走・追撃成功率などを週次で集計し、トッププレイヤーを表彰。",
+    description: "UR獲得・追撃成功・連続完走などを週次集計し、トッププレイヤーを表彰。",
     status: "PLANNING",
-    badgeColor: "text-neon-blue",
+    icon: Award,
   },
 ];
 
@@ -41,27 +42,34 @@ export default async function SocialPage() {
         <div className="mt-2 space-y-2">
           <h1 className="font-display text-3xl text-white">ソーシャルハブ</h1>
           <p className="text-sm text-white/75">
-            UMAプロジェクトのフレンド機能をベースに、尊師ガチャのハイライト共有とコミュニティ連携を準備中です。
+            UMA ROYALE のソーシャル（フレンド・タイムライン・ギフト）をベースに尊師ガチャへ最適化中です。
           </p>
           <div className="flex flex-wrap gap-2 text-[11px] text-white/70">
-            <span className="rounded-full border border-white/15 px-3 py-1">フレンド招待・申請</span>
-            <span className="rounded-full border border-white/15 px-3 py-1">カード自慢スクショ</span>
+            <span className="rounded-full border border-white/15 px-3 py-1">フレンド申請</span>
+            <span className="rounded-full border border-white/15 px-3 py-1">ギフト</span>
+            <span className="rounded-full border border-white/15 px-3 py-1">カードシェア</span>
             <span className="rounded-full border border-white/15 px-3 py-1">ランキング</span>
           </div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {roadmap.map((item) => (
-          <div key={item.title} className="rounded-3xl border border-white/10 bg-black/25 p-5 shadow-panel-inset">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-xl text-white">{item.title}</h2>
-              <span className={`text-[10px] uppercase tracking-[0.35em] ${item.badgeColor}`}>{item.status}</span>
+        {roadmap.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.title} className="rounded-3xl border border-white/10 bg-black/25 p-5 shadow-panel-inset">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Icon className="h-5 w-5 text-neon-yellow" />
+                  <h2 className="font-display text-xl text-white">{item.title}</h2>
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.35em] text-neon-blue">{item.status}</span>
+              </div>
+              <p className="mt-2 text-sm text-zinc-300 leading-relaxed">{item.description}</p>
+              <p className="mt-3 text-[11px] text-zinc-500">UMA実装を移植中。順次ロールアウト予定。</p>
             </div>
-            <p className="mt-2 text-sm text-zinc-300 leading-relaxed">{item.description}</p>
-            <p className="mt-3 text-[11px] text-zinc-500">実装後、設定なく自動で反映予定</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-black/35 p-5 shadow-panel-inset">
