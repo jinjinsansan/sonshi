@@ -24,8 +24,9 @@ type Props = {
 };
 
 const DEFAULT_PLAY_CLASS =
-  "rounded-full bg-gradient-to-b from-[#f6f7f9] via-[#d7d9df] to-[#aeb3bc] px-6 py-3 text-sm font-bold text-[#1c2330] " +
-  "shadow-[0_12px_30px_rgba(0,0,0,0.25)] border border-white/60 hover:brightness-105 transition disabled:opacity-60";
+  "w-full max-w-md rounded-[14px] border border-[#f1f3f5] bg-gradient-to-b from-[#fefefe] via-[#d8dce4] to-[#aab0bc] " +
+  "px-8 py-4 text-base font-bold tracking-[0.08em] text-[#1a2230] shadow-[0_14px_30px_rgba(0,0,0,0.28),inset_0_2px_0_rgba(255,255,255,0.85),inset_0_-3px_0_rgba(0,0,0,0.2)] " +
+  "transition hover:brightness-105 active:translate-y-0.5 disabled:opacity-60";
 
 export function GachaV2Player({ playLabel = "ガチャを回す", playClassName }: Props) {
   const [status, setStatus] = useState<Status>("idle");
@@ -105,7 +106,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-center gap-3 text-center">
         <button
           type="button"
           onClick={start}
@@ -118,7 +119,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
           <button
             type="button"
             onClick={handleSkip}
-            className="rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.25em] text-white"
+            className="text-[11px] uppercase tracking-[0.28em] text-white/80 underline-offset-4 hover:text-white"
           >
             Skip
           </button>

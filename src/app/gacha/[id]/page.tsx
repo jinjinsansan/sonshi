@@ -146,8 +146,7 @@ export default async function GachaDetailPage({ params }: Params) {
             <span>必要チケット: {theme.ticketLabel}</span>
           </div>
         </div>
-        <GachaV2Player playLabel="ガチャを回す" playClassName={theme.singleButtonClass}
-        />
+        <GachaV2Player playLabel="ガチャを回す" />
       </article>
     </section>
   );
