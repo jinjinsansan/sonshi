@@ -18,7 +18,16 @@ type ResultResponse = {
 
 type Status = "idle" | "loading" | "playing" | "result" | "error";
 
-export function GachaV2Player() {
+type Props = {
+  playLabel?: string;
+  playClassName?: string;
+};
+
+const DEFAULT_PLAY_CLASS =
+  "rounded-full bg-gradient-to-b from-[#f6f7f9] via-[#d7d9df] to-[#aeb3bc] px-6 py-3 text-sm font-bold text-[#1c2330] " +
+  "shadow-[0_12px_30px_rgba(0,0,0,0.25)] border border-white/60 hover:brightness-105 transition disabled:opacity-60";
+
+export function GachaV2Player({ playLabel = "ガチャを回す", playClassName }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [gachaId, setGachaId] = useState<string | null>(null);
@@ -101,9 +110,9 @@ export function GachaV2Player() {
           type="button"
           onClick={start}
           disabled={status === "loading" || status === "playing"}
-          className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-sm font-semibold text-black shadow-neon disabled:opacity-50"
+          className={playClassName ?? DEFAULT_PLAY_CLASS}
         >
-          {status === "playing" ? "再生中" : "PLAY"}
+          {status === "playing" ? "再生中" : playLabel}
         </button>
         {status === "playing" && (
           <button
