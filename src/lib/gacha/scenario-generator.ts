@@ -123,8 +123,9 @@ function generateNormalScenario(
   const ruleSet = GROUP_RULES[group];
   const rules = ruleSet.rules as Record<number, { allowed?: readonly string[]; forbidden?: readonly string[] }>;
 
-  // コマの再生順序: 1(待機) → 3(暗転) → 2(カウントダウン) → 4(チャレンジ) → 5(証拠) → 6(顔) → 7(追撃準備)
-  const KOMA_ORDER = [1, 3, 2, 4, 5, 6, 7];
+  // コマの再生順序: 1(待機) → 2(カウントダウン+暗転統合) → 4(チャレンジ) → 5(証拠) → 6(顔) → 7(追撃準備)
+  // ※3コマ目(暗転)は2コマ目に統合されたため削除
+  const KOMA_ORDER = [1, 2, 4, 5, 6, 7];
 
   const videos: string[] = [];
   let earlyExit = false;
