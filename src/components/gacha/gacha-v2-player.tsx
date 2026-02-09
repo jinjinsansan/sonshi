@@ -162,13 +162,12 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {status === "playing" && currentVideo && (
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-black/60 p-3">
-          <div className="relative w-full overflow-hidden rounded-xl bg-black">
+        <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/80">
             <video
               key={currentVideo.id}
               ref={videoRef}
               src={currentVideo.url}
-              className="h-[70vh] w-full object-contain"
+              className="h-[calc(100vh-220px)] w-full object-contain bg-black"
               playsInline
               autoPlay
               controls={false}
@@ -176,28 +175,27 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
               onEnded={handleEnded}
               onError={handleEnded}
             />
-          </div>
-          <div className="flex items-center justify-between text-xs text-white/70">
-            <span>
-              {current + 1} / {videos.length}
-            </span>
-            <div className="flex items-center gap-2">
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={!canAdvance}
-                className="rounded-full bg-gradient-to-b from-[#ff6b6b] to-[#d91c1c] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.35em] text-white shadow-[0_10px_25px_rgba(217,28,28,0.45)] disabled:opacity-50"
+                className="pointer-events-auto rounded-full bg-gradient-to-b from-[#ff6b6b] to-[#d91c1c] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.35em] text-white shadow-[0_14px_32px_rgba(217,28,28,0.5)] disabled:opacity-50"
               >
                 {current === videos.length - 1 ? "結果へ" : "NEXT"}
               </button>
               <button
                 type="button"
                 onClick={handleSkip}
-                className="rounded-full border border-white/40 bg-black px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white hover:bg-white/10"
+                className="pointer-events-auto rounded-full border border-white/50 bg-black/70 px-5 py-3 text-[12px] uppercase tracking-[0.3em] text-white shadow-[0_10px_20px_rgba(0,0,0,0.45)] hover:bg-white/10"
               >
                 SKIP
               </button>
             </div>
+          </div>
+          <div className="absolute left-4 top-4 rounded-full bg-black/60 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-white/80">
+            {current + 1} / {videos.length}
           </div>
         </div>
       )}
