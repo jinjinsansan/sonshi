@@ -38,6 +38,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   const [canAdvance, setCanAdvance] = useState(false);
   const [isAuto, setIsAuto] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isAutoRef = useRef(false); // AUTOモードの最新値を常に参照するためのref
 
   const start = useCallback(async () => {
     setStatus("loading");
@@ -46,6 +47,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     setCurrent(0);
     setCanAdvance(false);
     setIsAuto(false);
+    isAutoRef.current = false;
     try {
       const res = await fetch("/api/gacha/play", { method: "POST" });
       const data = (await res.json()) as ScenarioResponse | { error?: string };
@@ -90,31 +92,39 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   const handleEnded = useCallback(() => {
     if (!gachaId) return;
     
-    // AUTOモードの場合は自動的に次へ進む
-    if (isAuto) {
+    // AUTOモードの場合は自動的に次へ進む（refから最新値を取得）
+    if (isAutoRef.current) {
       setTimeout(() => {
-        const next = current + 1;
-        if (next < videos.length) {
-          setCurrent(next);
-          // AUTOモード時はcanAdvanceを操作しない（次の動画終了時に再度判定）
-          const node = videoRef.current;
-          if (node) {
-            node.load();
-            void node.play();
-          }
-        } else {
-          // 最後のコマまで到達したら結果を取得
-          fetchResult(gachaId).catch((err) => {
-            setError(err instanceof Error ? err.message : "結果取得に失敗しました");
-            setStatus("error");
+        setCurrent((prevCurrent) => {
+          const next = prevCurrent + 1;
+          setVideos((prevVideos) => {
+            if (next < prevVideos.length) {
+              // まだ動画が残っている場合は次へ進む
+              const node = videoRef.current;
+              if (node) {
+                // 次の動画をセット（useEffectで自動再生される）
+                setTimeout(() => {
+                  node.load();
+                  void node.play();
+                }, 0);
+              }
+            } else {
+              // 最後のコマまで到達したら結果を取得
+              fetchResult(gachaId).catch((err) => {
+                setError(err instanceof Error ? err.message : "結果取得に失敗しました");
+                setStatus("error");
+              });
+            }
+            return prevVideos;
           });
-        }
-      }, 500); // AUTO時は少し間を置いてから次へ
+          return next;
+        });
+      }, 300); // AUTO時は少し間を置いてから次へ
     } else {
       // 手動モードの場合のみcanAdvanceをtrueにする
       setCanAdvance(true);
     }
-  }, [gachaId, isAuto, current, videos.length, fetchResult]);
+  }, [gachaId, fetchResult]);
 
   const handleNext = useCallback(async () => {
     if (!gachaId || !canAdvance) return;
@@ -141,6 +151,11 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   }, [canAdvance, current, fetchResult, gachaId, videos.length]);
 
   const currentVideo = useMemo(() => videos[current], [videos, current]);
+
+  // isAutoが変わったらrefも更新
+  useEffect(() => {
+    isAutoRef.current = isAuto;
+  }, [isAuto]);
 
   // 次の2-3本を先読みして切り替えラグを減らす
   useEffect(() => {
@@ -170,6 +185,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
         setGachaId(null);
         setVideos([]);
         setIsAuto(false);
+        isAutoRef.current = false;
       }
     };
     window.addEventListener("keydown", handleEscape);
@@ -192,6 +208,8 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       if (tabBar) {
         tabBar.style.display = "";
       }
+      // ガチャ終了時はAUTOをリセット
+      isAutoRef.current = false;
     }
   }, [status]);
 
@@ -222,7 +240,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
             controls={false}
             onPlay={() => {
               // 動画が再生開始されたらNEXTボタンを押せるようにする（AUTOモード時を除く）
-              if (!isAuto) {
+              if (!isAutoRef.current) {
                 setCanAdvance(true);
               }
             }}
@@ -308,6 +326,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
               setGachaId(null);
               setVideos([]);
               setIsAuto(false);
+              isAutoRef.current = false;
             }}
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-lg transition hover:bg-black/90 hover:text-white"
             title="閉じる (ESC)"
