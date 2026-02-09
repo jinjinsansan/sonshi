@@ -176,6 +176,25 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     return () => window.removeEventListener("keydown", handleEscape);
   }, [status]);
 
+  // ガチャ再生中はフッターメニューを非表示にする
+  useEffect(() => {
+    if (status === "playing") {
+      // フッターメニューを非表示
+      document.body.style.overflow = "hidden";
+      const tabBar = document.querySelector("nav") as HTMLElement;
+      if (tabBar) {
+        tabBar.style.display = "none";
+      }
+    } else {
+      // 元に戻す
+      document.body.style.overflow = "";
+      const tabBar = document.querySelector("nav") as HTMLElement;
+      if (tabBar) {
+        tabBar.style.display = "";
+      }
+    }
+  }, [status]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-3 text-center">
