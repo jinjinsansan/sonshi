@@ -36,6 +36,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   const [current, setCurrent] = useState(0);
   const [result, setResult] = useState<ResultResponse | null>(null);
   const [canAdvance, setCanAdvance] = useState(false);
+  const [isAuto, setIsAuto] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const start = useCallback(async () => {
@@ -44,6 +45,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     setResult(null);
     setCurrent(0);
     setCanAdvance(false);
+    setIsAuto(false);
     try {
       const res = await fetch("/api/gacha/play", { method: "POST" });
       const data = (await res.json()) as ScenarioResponse | { error?: string };
@@ -88,7 +90,29 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   const handleEnded = useCallback(() => {
     if (!gachaId) return;
     setCanAdvance(true);
-  }, [gachaId]);
+    
+    // AUTOモードの場合は自動的に次へ進む
+    if (isAuto) {
+      setTimeout(() => {
+        const next = current + 1;
+        if (next < videos.length) {
+          setCurrent(next);
+          setCanAdvance(false);
+          const node = videoRef.current;
+          if (node) {
+            node.load();
+            void node.play();
+          }
+        } else {
+          // 最後のコマまで到達したら結果を取得
+          fetchResult(gachaId).catch((err) => {
+            setError(err instanceof Error ? err.message : "結果取得に失敗しました");
+            setStatus("error");
+          });
+        }
+      }, 300); // 少し間を置いてから次へ
+    }
+  }, [gachaId, isAuto, current, videos.length, fetchResult]);
 
   const handleLoaded = useCallback(() => {
     setCanAdvance(true);
@@ -146,6 +170,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
         setCurrent(0);
         setGachaId(null);
         setVideos([]);
+        setIsAuto(false);
       }
     };
     window.addEventListener("keydown", handleEscape);
@@ -188,7 +213,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!canAdvance}
+                disabled={!canAdvance || isAuto}
                 className="pointer-events-auto group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95 disabled:opacity-50"
               >
                 <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
@@ -198,6 +223,33 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
                   </span>
                   <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
                     {current === videos.length - 1 ? "Result" : "次へ"}
+                  </span>
+                </div>
+              </button>
+
+              {/* AUTOボタン */}
+              <button
+                type="button"
+                onClick={() => setIsAuto(!isAuto)}
+                className={`pointer-events-auto group relative h-32 w-32 rounded-full transition-all active:scale-95 ${
+                  isAuto
+                    ? "bg-gradient-to-b from-yellow-400 via-yellow-500 to-yellow-600 shadow-[0_8px_32px_rgba(234,179,8,0.7),0_0_80px_rgba(234,179,8,0.5),inset_0_2px_8px_rgba(255,255,255,0.4),inset_0_-4px_12px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_40px_rgba(234,179,8,0.9),0_0_100px_rgba(234,179,8,0.7)]"
+                    : "bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-900 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_60px_rgba(0,0,0,0.4),inset_0_2px_8px_rgba(255,255,255,0.2),inset_0_-4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.8),0_0_80px_rgba(0,0,0,0.6)]"
+                }`}
+              >
+                <div
+                  className={`absolute inset-2 rounded-full shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)] ${
+                    isAuto
+                      ? "bg-gradient-to-b from-yellow-300 to-yellow-500"
+                      : "bg-gradient-to-b from-zinc-600 to-zinc-800"
+                  }`}
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    AUTO
+                  </span>
+                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    {isAuto ? "ON" : "OFF"}
                   </span>
                 </div>
               </button>
@@ -232,6 +284,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
               setCurrent(0);
               setGachaId(null);
               setVideos([]);
+              setIsAuto(false);
             }}
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-lg transition hover:bg-black/90 hover:text-white"
             title="閉じる (ESC)"
