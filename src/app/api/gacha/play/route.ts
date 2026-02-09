@@ -6,6 +6,8 @@ import { getRequestAuthUser } from "@/lib/auth/session";
 import { getServerEnv } from "@/lib/env";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
+const FREE_PLAY_EMAILS = ["goldbenchan@gmail.com", "goldbencha@gmail.com"];
+
 export async function POST(request: NextRequest) {
   const { GACHA_V2_ENABLED } = getServerEnv();
   if (!GACHA_V2_ENABLED) {
@@ -17,6 +19,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userEmail = user.email?.toLowerCase() ?? "";
+  const isFreeUser = FREE_PLAY_EMAILS.includes(userEmail);
+
   try {
     const settings = await loadScenarioSettings();
     const scenario = generateScenario(settings);
@@ -25,42 +30,44 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = getSupabaseServiceClient() as any;
 
-    const { data: ticketType } = await supabase
-      .from("ticket_types")
-      .select("id")
-      .eq("code", "basic")
-      .maybeSingle();
+    if (!isFreeUser) {
+      const { data: ticketType } = await supabase
+        .from("ticket_types")
+        .select("id")
+        .eq("code", "basic")
+        .maybeSingle();
 
-    if (!ticketType?.id) {
-      return NextResponse.json({ error: "ticket type not found" }, { status: 500 });
-    }
+      if (!ticketType?.id) {
+        return NextResponse.json({ error: "ticket type not found" }, { status: 500 });
+      }
 
-    const { data: balance } = await supabase
-      .from("user_tickets")
-      .select("id, quantity")
-      .eq("user_id", user.id)
-      .eq("ticket_type_id", ticketType.id)
-      .maybeSingle();
+      const { data: balance } = await supabase
+        .from("user_tickets")
+        .select("id, quantity")
+        .eq("user_id", user.id)
+        .eq("ticket_type_id", ticketType.id)
+        .maybeSingle();
 
-    const qty = balance?.quantity ?? 0;
-    if (qty < 1) {
-      return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
-    }
+      const qty = balance?.quantity ?? 0;
+      if (qty < 1) {
+        return NextResponse.json({ error: "チケットが不足しています" }, { status: 400 });
+      }
 
-    const { error: updateErr } = await supabase
-      .from("user_tickets")
-      .upsert(
-        {
-          id: balance?.id,
-          user_id: user.id,
-          ticket_type_id: ticketType.id,
-          quantity: qty - 1,
-        },
-        { onConflict: "user_id,ticket_type_id" }
-      );
+      const { error: updateErr } = await supabase
+        .from("user_tickets")
+        .upsert(
+          {
+            id: balance?.id,
+            user_id: user.id,
+            ticket_type_id: ticketType.id,
+            quantity: qty - 1,
+          },
+          { onConflict: "user_id,ticket_type_id" }
+        );
 
-    if (updateErr) {
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      }
     }
 
     const { error: insertErr } = await supabase.from("gacha_history").insert({
