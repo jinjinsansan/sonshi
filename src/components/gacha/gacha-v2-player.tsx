@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ScenarioResponse = {
   gacha_id: string;
@@ -35,6 +35,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
   const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [current, setCurrent] = useState(0);
   const [result, setResult] = useState<ResultResponse | null>(null);
+  const [canAdvance, setCanAdvance] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const start = useCallback(async () => {
@@ -42,6 +43,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     setError(null);
     setResult(null);
     setCurrent(0);
+    setCanAdvance(false);
     try {
       const res = await fetch("/api/gacha/play", { method: "POST" });
       const data = (await res.json()) as ScenarioResponse | { error?: string };
@@ -57,6 +59,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       setVideos(videosData.videos ?? []);
       setStatus("playing");
       setCurrent(0);
+      setCanAdvance(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "開始に失敗しました");
       setStatus("error");
@@ -82,11 +85,22 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     }
   }, [fetchResult, gachaId]);
 
-  const handleEnded = useCallback(async () => {
+  const handleEnded = useCallback(() => {
     if (!gachaId) return;
+    setCanAdvance(true);
+  }, [gachaId]);
+
+  const handleLoaded = useCallback(() => {
+    setCanAdvance(true);
+  }, []);
+
+  const handleNext = useCallback(async () => {
+    if (!gachaId || !canAdvance) return;
+
     const next = current + 1;
     if (next < videos.length) {
       setCurrent(next);
+      setCanAdvance(false);
       const node = videoRef.current;
       if (node) {
         node.load();
@@ -94,15 +108,34 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       }
       return;
     }
+
     try {
       await fetchResult(gachaId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "結果取得に失敗しました");
       setStatus("error");
     }
-  }, [current, fetchResult, gachaId, videos.length]);
+  }, [canAdvance, current, fetchResult, gachaId, videos.length]);
 
   const currentVideo = useMemo(() => videos[current], [videos, current]);
+
+  // 次の2-3本を先読みして切り替えラグを減らす
+  useEffect(() => {
+    if (status !== "playing") return;
+    const links: HTMLLinkElement[] = [];
+    videos.slice(current, current + 3).forEach((entry) => {
+      if (!entry?.url) return;
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "video";
+      link.href = entry.url;
+      document.head.appendChild(link);
+      links.push(link);
+    });
+    return () => {
+      links.forEach((l) => document.head.removeChild(l));
+    };
+  }, [current, status, videos]);
 
   return (
     <div className="space-y-4">
@@ -129,21 +162,43 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {status === "playing" && currentVideo && (
-        <div className="rounded-2xl border border-white/10 bg-black/40 p-3">
-          <video
-            key={currentVideo.id}
-            ref={videoRef}
-            src={currentVideo.url}
-            className="w-full rounded-xl bg-black"
-            playsInline
-            autoPlay
-            controls={false}
-            onEnded={handleEnded}
-            onError={handleEnded}
-          />
-          <p className="mt-2 text-xs text-white/70">
-            {current + 1} / {videos.length}
-          </p>
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-black/60 p-3">
+          <div className="relative w-full overflow-hidden rounded-xl bg-black">
+            <video
+              key={currentVideo.id}
+              ref={videoRef}
+              src={currentVideo.url}
+              className="h-[70vh] w-full object-contain"
+              playsInline
+              autoPlay
+              controls={false}
+              onLoadedData={handleLoaded}
+              onEnded={handleEnded}
+              onError={handleEnded}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-white/70">
+            <span>
+              {current + 1} / {videos.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!canAdvance}
+                className="rounded-full bg-gradient-to-b from-[#ff6b6b] to-[#d91c1c] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.35em] text-white shadow-[0_10px_25px_rgba(217,28,28,0.45)] disabled:opacity-50"
+              >
+                {current === videos.length - 1 ? "結果へ" : "NEXT"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="rounded-full border border-white/40 bg-black px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white hover:bg-white/10"
+              >
+                SKIP
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
