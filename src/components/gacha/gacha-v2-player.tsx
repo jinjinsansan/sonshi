@@ -137,6 +137,21 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
     };
   }, [current, status, videos]);
 
+  // ESCキーで全画面モードから抜ける
+  useEffect(() => {
+    if (status !== "playing") return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setStatus("idle");
+        setCurrent(0);
+        setGachaId(null);
+        setVideos([]);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [status]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -148,15 +163,6 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
         >
           {status === "playing" ? "再生中" : playLabel}
         </button>
-        {status === "playing" && (
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="text-[11px] uppercase tracking-[0.28em] text-white/80 underline-offset-4 hover:text-white"
-          >
-            Skip
-          </button>
-        )}
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
@@ -218,6 +224,22 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
           <div className="absolute left-4 top-4 rounded-full bg-black/70 px-4 py-2 text-sm uppercase tracking-[0.3em] text-white/90 shadow-lg">
             {current + 1} / {videos.length}
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("idle");
+              setCurrent(0);
+              setGachaId(null);
+              setVideos([]);
+            }}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-lg transition hover:bg-black/90 hover:text-white"
+            title="閉じる (ESC)"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 
