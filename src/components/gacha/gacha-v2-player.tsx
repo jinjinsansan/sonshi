@@ -162,39 +162,60 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {status === "playing" && currentVideo && (
-        <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/80">
-            <video
-              key={currentVideo.id}
-              ref={videoRef}
-              src={currentVideo.url}
-              className="h-[calc(100vh-220px)] w-full object-contain bg-black"
-              playsInline
-              autoPlay
-              controls={false}
-              onLoadedData={handleLoaded}
-              onEnded={handleEnded}
-              onError={handleEnded}
-            />
-          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
-            <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+          <video
+            key={currentVideo.id}
+            ref={videoRef}
+            src={currentVideo.url}
+            className="h-full w-full object-contain"
+            playsInline
+            autoPlay
+            controls={false}
+            onLoadedData={handleLoaded}
+            onEnded={handleEnded}
+            onError={handleEnded}
+          />
+          
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
+            <div className="flex items-center gap-6">
+              {/* NEXTボタン */}
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={!canAdvance}
-                className="pointer-events-auto rounded-full bg-gradient-to-b from-[#ff6b6b] to-[#d91c1c] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.35em] text-white shadow-[0_14px_32px_rgba(217,28,28,0.5)] disabled:opacity-50"
+                className="pointer-events-auto group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95 disabled:opacity-50"
               >
-                {current === videos.length - 1 ? "結果へ" : "NEXT"}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    {current === videos.length - 1 ? "結果" : "NEXT"}
+                  </span>
+                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    {current === videos.length - 1 ? "Result" : "次へ"}
+                  </span>
+                </div>
               </button>
+
+              {/* SKIPボタン */}
               <button
                 type="button"
                 onClick={handleSkip}
-                className="pointer-events-auto rounded-full border border-white/50 bg-black/70 px-5 py-3 text-[12px] uppercase tracking-[0.3em] text-white shadow-[0_10px_20px_rgba(0,0,0,0.45)] hover:bg-white/10"
+                className="pointer-events-auto group relative h-32 w-32 rounded-full bg-gradient-to-b from-zinc-800 via-zinc-900 to-black shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_80px_rgba(0,0,0,0.6),inset_0_2px_8px_rgba(255,255,255,0.2),inset_0_-4px_12px_rgba(0,0,0,0.6)] transition-all hover:shadow-[0_8px_40px_rgba(0,0,0,0.9),0_0_100px_rgba(0,0,0,0.7)] active:scale-95"
               >
-                SKIP
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-[inset_0_2px_12px_rgba(255,255,255,0.3),inset_0_-2px_8px_rgba(0,0,0,0.5)]" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    SKIP
+                  </span>
+                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    スキップ
+                  </span>
+                </div>
               </button>
             </div>
           </div>
-          <div className="absolute left-4 top-4 rounded-full bg-black/60 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-white/80">
+
+          <div className="absolute left-4 top-4 rounded-full bg-black/70 px-4 py-2 text-sm uppercase tracking-[0.3em] text-white/90 shadow-lg">
             {current + 1} / {videos.length}
           </div>
         </div>
