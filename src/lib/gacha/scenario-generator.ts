@@ -123,10 +123,14 @@ function generateNormalScenario(
   const ruleSet = GROUP_RULES[group];
   const rules = ruleSet.rules as Record<number, { allowed?: readonly string[]; forbidden?: readonly string[] }>;
 
+  // コマの再生順序: 1(待機) → 3(暗転) → 2(カウントダウン) → 4(チャレンジ) → 5(証拠) → 6(顔) → 7(追撃準備)
+  const KOMA_ORDER = [1, 3, 2, 4, 5, 6, 7];
+
   const videos: string[] = [];
   let earlyExit = false;
 
-  for (let koma = 1; koma <= 7; koma += 1) {
+  for (let i = 0; i < KOMA_ORDER.length; i += 1) {
+    const koma = KOMA_ORDER[i];
     const slotRules = rules[koma] ?? { allowed: [], forbidden: [] };
     const allowed = slotRules.allowed ?? [];
     const pool = allowed.length > 0 ? allowed : slotRules.forbidden ?? [];
@@ -134,6 +138,7 @@ function generateNormalScenario(
     const selected = pickRandom(candidates);
     videos.push(selected);
 
+    // 早期終了チェックは元のコマ番号（4,5,6）で判定
     if (koma >= 4 && koma <= 6 && isEarlyExit(selected)) {
       earlyExit = true;
       break;
