@@ -89,7 +89,6 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
 
   const handleEnded = useCallback(() => {
     if (!gachaId) return;
-    setCanAdvance(true);
     
     // AUTOモードの場合は自動的に次へ進む
     if (isAuto) {
@@ -97,7 +96,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
         const next = current + 1;
         if (next < videos.length) {
           setCurrent(next);
-          setCanAdvance(false);
+          // AUTOモード時はcanAdvanceを操作しない（次の動画終了時に再度判定）
           const node = videoRef.current;
           if (node) {
             node.load();
@@ -110,21 +109,21 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
             setStatus("error");
           });
         }
-      }, 300); // 少し間を置いてから次へ
+      }, 500); // AUTO時は少し間を置いてから次へ
+    } else {
+      // 手動モードの場合のみcanAdvanceをtrueにする
+      setCanAdvance(true);
     }
   }, [gachaId, isAuto, current, videos.length, fetchResult]);
-
-  const handleLoaded = useCallback(() => {
-    setCanAdvance(true);
-  }, []);
 
   const handleNext = useCallback(async () => {
     if (!gachaId || !canAdvance) return;
 
+    setCanAdvance(false); // 即座にリセット
+
     const next = current + 1;
     if (next < videos.length) {
       setCurrent(next);
-      setCanAdvance(false);
       const node = videoRef.current;
       if (node) {
         node.load();
@@ -193,7 +192,7 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {status === "playing" && currentVideo && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
           <video
             key={currentVideo.id}
             ref={videoRef}
@@ -202,7 +201,12 @@ export function GachaV2Player({ playLabel = "ガチャを回す", playClassName 
             playsInline
             autoPlay
             controls={false}
-            onLoadedData={handleLoaded}
+            onPlay={() => {
+              // 動画が再生開始されたらNEXTボタンを押せるようにする（AUTOモード時を除く）
+              if (!isAuto) {
+                setCanAdvance(true);
+              }
+            }}
             onEnded={handleEnded}
             onError={handleEnded}
           />
