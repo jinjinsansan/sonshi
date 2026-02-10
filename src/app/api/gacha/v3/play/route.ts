@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
       scenario,
     };
 
-    const { error: insertErr } = await supabase.from("gacha_history").insert(insertPayload);
+    // 型は既存スキーマとの差異があるため挿入時は緩和
+    const { error: insertErr } = await supabase.from("gacha_history").insert(insertPayload as unknown as Record<string, unknown>);
     if (insertErr) {
       return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
