@@ -6,7 +6,7 @@ import {
   fetchGachaCatalog,
   gachaIdMatches,
 } from "@/lib/utils/gacha";
-import { GachaV3Player } from "@/components/gacha/gacha-v3-player";
+import { GachaV4Player } from "@/components/gacha/gacha-v4-player";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -146,7 +146,7 @@ export default async function GachaDetailPage({ params }: Params) {
             <span>必要チケット: {theme.ticketLabel}</span>
           </div>
         </div>
-        <GachaV3Player playLabel="ガチャを回す" />
+        <GachaV4Player playLabel="ガチャを回す" />
       </article>
     </section>
   );
