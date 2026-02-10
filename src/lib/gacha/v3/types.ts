@@ -9,6 +9,24 @@ export type VideoCategory =
   | "yokoku"
   | "result";
 
+export type ResultType =
+  | "continue"
+  | "lose"
+  | "win"
+  | "tsuigeki_chance"
+  | "tsuigeki_success"
+  | "tsuigeki_fail"
+  | "none";
+
+export type ResultColor = "green" | "red" | "rainbow" | "gold" | "gray" | "none";
+
+export type ResultDisplay = {
+  type: ResultType;
+  text: string;
+  color: ResultColor;
+  show_next_button: boolean;
+};
+
 export type VideoType =
   | "continue"
   | "lose"
@@ -61,6 +79,7 @@ export type VideoSequenceItem = {
   category: VideoCategory;
   filename: string;
   hint_level: number;
+  result_display: ResultDisplay;
 };
 
 export type ScenarioResult = "win" | "lose";

@@ -3,6 +3,7 @@ import { selectCountdown, selectJudge, selectReaction, selectStandby, selectYoko
 import { findVideoByType, randomInt, toSequenceItem } from "./utils";
 import {
   DondenSetting,
+  ResultDisplay,
   Scenario,
   ScenarioResult,
   Video,
@@ -49,16 +50,53 @@ export function buildVideoSequence(
   komaCount: number,
   isDonden: boolean,
   dondenType: DondenSetting["type"] | undefined,
-  videos: Video[]
+  videos: Video[],
+  hasTsuigeki: boolean,
+  tsuigekiResult?: "success" | "fail"
 ): VideoSequenceItem[] {
+  const makeResultDisplay = (
+    video: Video,
+    isLast: boolean
+  ): ResultDisplay => {
+    // テロップなしカテゴリ
+    if (
+      video.category === "standby" ||
+      video.category === "countdown" ||
+      video.category === "yokoku" ||
+      video.category === "reaction_ito" ||
+      video.category === "reaction_guri"
+    ) {
+      return { type: "none", text: "", color: "none", show_next_button: true };
+    }
+
+    // 結果カテゴリ
+    if (video.category === "result") {
+      if (video.video_type === "win") return { type: "win", text: "当たり！！", color: "rainbow", show_next_button: false };
+      if (video.video_type === "lose") return { type: "lose", text: "ハズレ...", color: "red", show_next_button: false };
+      if (video.video_type === "tsuigeki_chance") return { type: "tsuigeki_chance", text: "追撃チャンス！", color: "gold", show_next_button: true };
+      if (video.video_type === "tsuigeki_success") return { type: "tsuigeki_success", text: "追撃成功！！", color: "rainbow", show_next_button: false };
+      if (video.video_type === "tsuigeki_fail") return { type: "tsuigeki_fail", text: "追撃失敗...", color: "gray", show_next_button: false };
+    }
+
+    // 審判
+    if (video.category === "judge") {
+      if (isLast && result === "lose" && !hasTsuigeki) {
+        return { type: "lose", text: "ハズレ...", color: "red", show_next_button: false };
+      }
+      return { type: "continue", text: "継続！", color: "green", show_next_button: true };
+    }
+
+    return { type: "none", text: "", color: "none", show_next_button: true };
+  };
+
   const sequence: VideoSequenceItem[] = [];
   let order = 1;
 
   const standby = selectStandby(star, isDonden, dondenType, videos);
-  sequence.push(toSequenceItem(order++, standby));
+  sequence.push({ ...toSequenceItem(order++, standby), result_display: makeResultDisplay(standby, false) });
 
   const countdown = selectCountdown(star, isDonden, dondenType, videos);
-  sequence.push(toSequenceItem(order++, countdown));
+  sequence.push({ ...toSequenceItem(order++, countdown), result_display: makeResultDisplay(countdown, false) });
 
   const middleKomaCount = Math.max(0, komaCount - 3); // standby, countdown, result
   const judgeUsed = new Set<string>();
@@ -70,20 +108,22 @@ export function buildVideoSequence(
     // 予告（20%）
     if (!isLast && Math.random() < 0.2) {
       const yokoku = selectYokoku(star, result, isDonden, progress, videos);
-      if (yokoku) sequence.push(toSequenceItem(order++, yokoku));
+      if (yokoku)
+        sequence.push({ ...toSequenceItem(order++, yokoku), result_display: makeResultDisplay(yokoku, false) });
     }
 
     const judgeType: "continue" | "lose" = isLast && result === "lose" && !isDonden ? "lose" : "continue";
     const judge = selectJudge(judgeType, judgeUsed, videos);
     if (judge) {
-      sequence.push(toSequenceItem(order++, judge));
+      sequence.push({ ...toSequenceItem(order++, judge), result_display: makeResultDisplay(judge, isLast) });
       judgeUsed.add(judge.video_id);
     }
 
     // リアクション（30%）
     if (!isLast && Math.random() < 0.3) {
       const reaction = selectReaction(star, result, isDonden, progress, videos);
-      if (reaction) sequence.push(toSequenceItem(order++, reaction));
+      if (reaction)
+        sequence.push({ ...toSequenceItem(order++, reaction), result_display: makeResultDisplay(reaction, false) });
     }
   }
 
@@ -91,16 +131,30 @@ export function buildVideoSequence(
   if (isDonden && dondenType) {
     if (dondenType === "lose_to_win") {
       const frankel = findVideoByType(videos, "yokoku", "super_positive");
-      sequence.push(toSequenceItem(order++, frankel));
+      sequence.push({ ...toSequenceItem(order++, frankel), result_display: makeResultDisplay(frankel, false) });
     } else if (dondenType === "win_to_lose") {
       const kakeru = findVideoByType(videos, "yokoku", "danger");
-      sequence.push(toSequenceItem(order++, kakeru));
+      sequence.push({ ...toSequenceItem(order++, kakeru), result_display: makeResultDisplay(kakeru, false) });
     }
   }
 
   const resultType = result === "win" ? "win" : "lose";
   const resultVideo = findVideoByType(videos, "result", resultType);
-  sequence.push(toSequenceItem(order++, resultVideo));
+
+  // 追撃ありの場合は追撃チャンス＋結果に差し替え
+  if (hasTsuigeki) {
+    const chance = findVideoByType(videos, "result", "tsuigeki_chance");
+    const resVideo = findVideoByType(
+      videos,
+      "result",
+      tsuigekiResult === "success" ? "tsuigeki_success" : "tsuigeki_fail"
+    );
+
+    sequence.push({ ...toSequenceItem(order++, chance), result_display: makeResultDisplay(chance, false) });
+    sequence.push({ ...toSequenceItem(order++, resVideo), result_display: makeResultDisplay(resVideo, true) });
+  } else {
+    sequence.push({ ...toSequenceItem(order++, resultVideo), result_display: makeResultDisplay(resultVideo, true) });
+  }
 
   return sequence;
 }
@@ -123,8 +177,6 @@ export function generateScenario(
   const maxKoma = rtpSetting?.max_koma ?? 12;
   const komaCount = randomInt(minKoma, maxKoma);
 
-  const video_sequence = buildVideoSequence(star, result, komaCount, isDonden, dondenType, videos);
-
   let has_tsuigeki = false;
   let tsuigeki_result: "success" | "fail" | undefined;
   let card_count = result === "win" ? 1 : 0;
@@ -133,27 +185,21 @@ export function generateScenario(
     has_tsuigeki = true;
     const successRate = star === 10 ? 50 : star === 11 ? 80 : 100;
     tsuigeki_result = Math.random() * 100 < successRate ? "success" : "fail";
-
-    // 置き換え: 最後の結果を追撃チャンスに差し替え
-    const chance = findVideoByType(videos, "result", "tsuigeki_chance");
-    const resVideo = findVideoByType(
-      videos,
-      "result",
-      tsuigeki_result === "success" ? "tsuigeki_success" : "tsuigeki_fail"
-    );
-
-    if (video_sequence.length > 0) {
-      video_sequence[video_sequence.length - 1] = toSequenceItem(video_sequence.length, chance);
-      video_sequence.push(toSequenceItem(video_sequence.length + 1, resVideo));
-    } else {
-      video_sequence.push(toSequenceItem(1, chance));
-      video_sequence.push(toSequenceItem(2, resVideo));
-    }
-
     if (tsuigeki_result === "success") {
       card_count = star === 12 ? (Math.random() < 0.3 ? 3 : 2) : 2;
     }
   }
+
+  const video_sequence = buildVideoSequence(
+    star,
+    result,
+    komaCount,
+    isDonden,
+    dondenType,
+    videos,
+    has_tsuigeki,
+    tsuigeki_result
+  );
 
   return {
     id: randomUUID(),

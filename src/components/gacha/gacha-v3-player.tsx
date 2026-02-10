@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Scenario, VideoSequenceItem } from "@/lib/gacha/v3/types";
+import type { ResultDisplay, Scenario, VideoSequenceItem } from "@/lib/gacha/v3/types";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 
 type Status = "idle" | "loading" | "playing" | "result" | "error";
@@ -25,6 +25,7 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [canAdvance, setCanAdvance] = useState(false);
   const [isAuto, setIsAuto] = useState(false);
+  const [telop, setTelop] = useState<ResultDisplay | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isAutoRef = useRef(false);
 
@@ -57,8 +58,9 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     }
   }, []);
 
-  const handleNext = useCallback(() => {
-    if (!scenario || !canAdvance) return;
+  const advance = useCallback(() => {
+    if (!scenario) return;
+    setTelop(null);
     setCanAdvance(false);
     const next = currentIndex + 1;
     if (next < scenario.video_sequence.length) {
@@ -68,38 +70,47 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
         node.load();
         void node.play();
       }
-    } else {
-      setStatus("result");
+      return;
     }
-  }, [canAdvance, currentIndex, scenario]);
+    setStatus("result");
+  }, [currentIndex, scenario]);
+
+  const handleNext = useCallback(() => {
+    if (!scenario || !canAdvance) return;
+    advance();
+  }, [advance, canAdvance, scenario]);
 
   const handleEnded = useCallback(() => {
-    if (!scenario) return;
-    if (isAutoRef.current) {
+    if (!scenario || !currentVideo) return;
+    const rd = currentVideo.result_display;
+    setTelop(rd);
+
+    const afterTelop = () => {
+      if (rd?.show_next_button && currentIndex < scenario.video_sequence.length - 1) {
+        if (isAutoRef.current) {
+          setTimeout(() => advance(), 100);
+        } else {
+          setCanAdvance(true);
+        }
+      } else {
+        setStatus("result");
+      }
+    };
+
+    if (rd && rd.type !== "none") {
+      setCanAdvance(false);
       setTimeout(() => {
-        setCurrentIndex((prev) => {
-          const next = prev + 1;
-          if (next < scenario.video_sequence.length) {
-            const node = videoRef.current;
-            if (node) {
-              setTimeout(() => {
-                node.load();
-                void node.play();
-              }, 0);
-            }
-          } else {
-            setStatus("result");
-          }
-          return next;
-        });
-      }, 300);
+        setTelop(null);
+        afterTelop();
+      }, 1800);
     } else {
-      setCanAdvance(true);
+      afterTelop();
     }
-  }, [scenario]);
+  }, [advance, currentIndex, currentVideo, scenario]);
 
   const handleSkip = useCallback(() => {
     if (!scenario) return;
+    setTelop(null);
     setStatus("result");
     setCanAdvance(false);
   }, [scenario]);
@@ -172,6 +183,37 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
             onEnded={handleEnded}
             onError={handleEnded}
           />
+
+          {telop && telop.type !== "none" && (
+            <div className="pointer-events-none absolute inset-0 z-[120] flex items-center justify-center bg-black/60">
+              <div
+                className="px-6 py-4 text-center"
+                style={{
+                  animation: "telop-emerge 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                  transform: "scale(0.3)",
+                  opacity: 0,
+                }}
+              >
+                <span
+                  className={`font-serif text-5xl font-extrabold tracking-[0.1em] drop-shadow-[0_6px_18px_rgba(0,0,0,0.8)] ${
+                    telop.color === "green"
+                      ? "text-emerald-300"
+                      : telop.color === "red"
+                        ? "text-red-400"
+                        : telop.color === "rainbow"
+                          ? "bg-gradient-to-r from-red-400 via-yellow-300 to-blue-400 bg-clip-text text-transparent"
+                          : telop.color === "gold"
+                            ? "bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent"
+                            : telop.color === "gray"
+                              ? "text-gray-300"
+                              : "text-white"
+                  }`}
+                >
+                  {telop.text}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
             <div className="flex items-center gap-6">
@@ -273,6 +315,15 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
           </button>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes telop-emerge {
+          0% { transform: scale(0.3) translateZ(-400px) rotateX(25deg); opacity: 0; }
+          50% { opacity: 1; }
+          70% { transform: scale(1.05) translateZ(50px) rotateX(-5deg); }
+          100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

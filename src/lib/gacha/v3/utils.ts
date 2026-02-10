@@ -1,5 +1,6 @@
 import { Video, VideoCategory, VideoSequenceItem } from "./types";
 import { publicEnv } from "@/lib/env";
+import type { Video, VideoCategory, VideoSequenceItem } from "./types";
 
 export function randomChoice<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)];
@@ -40,5 +41,11 @@ export function toSequenceItem(order: number, video: Video): VideoSequenceItem {
     category: video.category,
     filename: video.filename,
     hint_level: video.hint_level,
+    result_display: {
+      type: "none",
+      text: "",
+      color: "none",
+      show_next_button: true,
+    },
   };
 }
