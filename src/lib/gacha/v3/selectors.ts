@@ -1,4 +1,4 @@
-import { randomChoice } from "./utils";
+import { randomChoice, toSequenceItem } from "./utils";
 import { DondenSetting, Video, VideoCategory, VideoSequenceItem } from "./types";
 
 type JudgeType = "continue" | "lose";
@@ -159,11 +159,8 @@ export function addSequenceItem(
 ): number {
   if (!video) return order;
   sequence.push({
-    order,
-    video_id: video.video_id,
+    ...toSequenceItem(order, video),
     category: mapCategory ?? video.category,
-    filename: video.filename,
-    hint_level: video.hint_level,
   });
   return order + 1;
 }
