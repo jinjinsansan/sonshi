@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
   const isFreeUser = FREE_PLAY_EMAILS.includes(userEmail);
 
   // Ticket deduction (reusing basic ticket)
-  const supabase = getSupabaseServiceClient();
+  // Supabase typed client is based on V2 schema; cast to any for V3 inserts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = getSupabaseServiceClient() as any;
   if (!isFreeUser) {
     const { data: ticketType } = await supabase
       .from("ticket_types")
@@ -91,8 +93,7 @@ export async function POST(request: NextRequest) {
       scenario,
     };
 
-    // 型は既存スキーマとの差異があるため挿入時は緩和
-    const { error: insertErr } = await supabase.from("gacha_history").insert(insertPayload as unknown as Record<string, unknown>);
+    const { error: insertErr } = await supabase.from("gacha_history").insert(insertPayload);
     if (insertErr) {
       return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
