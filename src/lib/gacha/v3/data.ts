@@ -87,7 +87,11 @@ export async function loadVideos(): Promise<Video[]> {
   for (const row of data as VideoDbRow[]) {
     const safe = videoSchema.safeParse(row);
     if (safe.success) {
-      const video: Video = { ...safe.data, video_type: (safe.data.video_type as Video["video_type"]) ?? null };
+      const video: Video = {
+        ...safe.data,
+        category: safe.data.category as Video["category"],
+        video_type: (safe.data.video_type as Video["video_type"]) ?? null,
+      };
       parsed.push(video);
     }
   }
