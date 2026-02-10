@@ -1,4 +1,5 @@
 import { Video, VideoCategory, VideoSequenceItem } from "./types";
+import { publicEnv } from "@/lib/env";
 
 export function randomChoice<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)];
@@ -23,7 +24,12 @@ export function findVideoByType(
 }
 
 export function getVideoPathV3(filename: string): string {
-  // V3 assets live directly under /public/videos with their filename
+  const base = publicEnv.NEXT_PUBLIC_R2_PUBLIC_BASE_URL;
+  if (base) {
+    const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+    return `${trimmed}/${filename}`;
+  }
+  // fallback to local public/videos for dev
   return `/videos/${filename}`;
 }
 
