@@ -139,10 +139,9 @@ function generateNormalScenario(
     const selected = pickRandom(candidates);
     videos.push(selected);
 
-    // 早期終了チェックは元のコマ番号（4,5,6）で判定
+    // 早期終了コマを引いた場合も6コマ目まで映像を並べるため、フラグのみ立てる
     if (koma >= 4 && koma <= 6 && isEarlyExit(selected)) {
       earlyExit = true;
-      break;
     }
   }
 
