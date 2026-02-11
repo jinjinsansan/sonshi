@@ -15,8 +15,6 @@ type CardData = {
   serial_number?: number | null;
 };
 
-type ResultKind = "lose" | "win" | "big_win" | "jackpot" | "chase";
-
 type Props = {
   playLabel?: string;
   playClassName?: string;
@@ -38,7 +36,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
   const [canAdvance, setCanAdvance] = useState(false);
   const [isAuto, setIsAuto] = useState(false);
   const [telop, setTelop] = useState<ResultDisplay | null>(null);
-  const [resultKind, setResultKind] = useState<ResultKind | null>(null);
   const [cards, setCards] = useState<CardData[] | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -53,14 +50,94 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     setCurrentIndex(0);
     setIsAuto(false);
     isAutoRef.current = false;
-    setResultKind(null);
     lastResultRef.current = null;
   }, []);
 
+  const normalizedSequence: VideoSequenceItem[] = useMemo(() => {
+    if (!scenario) return [];
+
+    const raw = (scenario.video_sequence ?? []) as (VideoSequenceItem & { duration_seconds?: number })[];
+    const seq: VideoSequenceItem[] = [];
+
+    // 1コマ目: standby
+    seq.push({
+      order: 1,
+      video_id: "S01",
+      category: "standby",
+      filename: "S01.mp4",
+      hint_level: 0,
+      result_display: { type: "none", text: "", color: "none", show_next_button: true },
+    });
+
+    // 2コマ目: countdown
+    seq.push({
+      order: 2,
+      video_id: "C01",
+      category: "countdown",
+      filename: "C01.mp4",
+      hint_level: 0,
+      result_display: { type: "none", text: "", color: "none", show_next_button: true },
+    });
+
+    const baseStart = seq.length;
+    raw.forEach((item, idx) => {
+      seq.push({
+        order: baseStart + idx + 1,
+        video_id: item.video_id,
+        category: item.category,
+        filename: item.filename,
+        hint_level: item.hint_level ?? 0,
+        result_display: { type: "none", text: "", color: "none", show_next_button: true },
+      });
+    });
+
+    const storyScenario = scenario as Scenario & { has_chase?: boolean; chase_result?: "success" | "fail" | null };
+    const hasChase = storyScenario.has_chase ?? storyScenario.has_tsuigeki ?? false;
+    const chaseResult = storyScenario.chase_result ?? storyScenario.tsuigeki_result;
+    const isWin = scenario.result !== "lose";
+
+    if (seq.length === 0) return seq;
+
+    const lastIndex = seq.length - 1;
+
+    if (hasChase && seq.length >= 2) {
+      const chanceIndex = lastIndex - 1;
+      seq[chanceIndex].result_display = {
+        type: "tsuigeki_chance",
+        text: "追撃チャンス！",
+        color: "gold",
+        show_next_button: true,
+      };
+      seq[lastIndex].result_display = {
+        type: chaseResult === "success" ? "tsuigeki_success" : "tsuigeki_fail",
+        text: chaseResult === "success" ? "追撃成功！！" : "追撃失敗...",
+        color: chaseResult === "success" ? "rainbow" : "gray",
+        show_next_button: false,
+      };
+      for (let i = 0; i < chanceIndex; i += 1) {
+        if (seq[i].result_display.type === "none") {
+          seq[i].result_display = { type: "continue", text: "継続！", color: "green", show_next_button: true };
+        }
+      }
+    } else {
+      for (let i = 0; i < seq.length; i += 1) {
+        const isLast = i === lastIndex;
+        if (isLast) {
+          seq[i].result_display = isWin
+            ? { type: "win", text: "当たり！！", color: "rainbow", show_next_button: false }
+            : { type: "lose", text: "ハズレ...", color: "red", show_next_button: false };
+        } else if (seq[i].result_display.type === "none") {
+          seq[i].result_display = { type: "continue", text: "継続！", color: "green", show_next_button: true };
+        }
+      }
+    }
+
+    return seq;
+  }, [scenario]);
+
   const currentVideo: VideoSequenceItem | null = useMemo(() => {
-    if (!scenario) return null;
-    return scenario.video_sequence[currentIndex] ?? null;
-  }, [scenario, currentIndex]);
+    return normalizedSequence[currentIndex] ?? null;
+  }, [currentIndex, normalizedSequence]);
 
   const start = useCallback(async () => {
     setStatus("loading");
@@ -71,7 +148,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     setCanAdvance(false);
     setIsAuto(false);
     isAutoRef.current = false;
-    setResultKind(null);
     lastResultRef.current = null;
     try {
       const res = await fetch("/api/gacha/v3/play", { method: "POST" });
@@ -89,67 +165,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
       setStatus("error");
     }
   }, []);
-
-  const advance = useCallback(() => {
-    if (!scenario) return;
-    setTelop(null);
-    setCanAdvance(false);
-    const next = currentIndex + 1;
-    if (next < scenario.video_sequence.length) {
-      setCurrentIndex(next);
-      const node = videoRef.current;
-      if (node) {
-        node.load();
-        void node.play();
-      }
-      return;
-    }
-    setResultKind(resolveResultKind(scenario, lastResultRef.current));
-    setStatus("result");
-  }, [currentIndex, scenario]);
-
-  const handleNext = useCallback(() => {
-    if (!scenario || !canAdvance) return;
-    advance();
-  }, [advance, canAdvance, scenario]);
-
-  const handleEnded = useCallback(() => {
-    if (!scenario || !currentVideo) return;
-    const rd = currentVideo.result_display;
-    lastResultRef.current = rd?.type ?? null;
-    setTelop(rd);
-
-    const afterTelop = () => {
-      if (rd?.show_next_button && currentIndex < scenario.video_sequence.length - 1) {
-        if (isAutoRef.current) {
-          setTimeout(() => advance(), 100);
-        } else {
-          setCanAdvance(true);
-        }
-      } else {
-        setResultKind(resolveResultKind(scenario, lastResultRef.current));
-        setStatus("result");
-      }
-    };
-
-    if (rd && rd.type !== "none") {
-      setCanAdvance(false);
-      setTimeout(() => {
-        setTelop(null);
-        afterTelop();
-      }, 1800);
-    } else {
-      afterTelop();
-    }
-  }, [advance, currentIndex, currentVideo, scenario]);
-
-  const handleSkip = useCallback(() => {
-    if (!scenario) return;
-    setTelop(null);
-    setResultKind(resolveResultKind(scenario, lastResultRef.current));
-    setStatus("result");
-    setCanAdvance(false);
-  }, [scenario]);
 
   const fetchCards = useCallback(async (id: string | null, star: number) => {
     setCardLoading(true);
@@ -169,6 +184,66 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
       setCardLoading(false);
     }
   }, []);
+
+  const advance = useCallback(() => {
+    setTelop(null);
+    setCanAdvance(false);
+    const next = currentIndex + 1;
+    if (next < normalizedSequence.length) {
+      setCurrentIndex(next);
+      const node = videoRef.current;
+      if (node) {
+        node.load();
+        void node.play();
+      }
+      return;
+    }
+    void fetchCards(gachaId, scenario?.star ?? 1);
+    setStatus("card");
+  }, [currentIndex, fetchCards, gachaId, normalizedSequence.length, scenario?.star]);
+
+  const handleNext = useCallback(() => {
+    if (!scenario || !canAdvance) return;
+    advance();
+  }, [advance, canAdvance, scenario]);
+
+  const handleEnded = useCallback(() => {
+    if (!scenario || !currentVideo) return;
+    const rd = currentVideo.result_display;
+    lastResultRef.current = rd?.type ?? null;
+    setTelop(rd);
+
+    const afterTelop = () => {
+      if (rd?.show_next_button && currentIndex < normalizedSequence.length - 1) {
+        if (isAutoRef.current) {
+          setTimeout(() => advance(), 100);
+        } else {
+          setCanAdvance(true);
+        }
+      } else {
+        void fetchCards(gachaId, scenario.star);
+        setStatus("card");
+      }
+    };
+
+    if (rd && rd.type !== "none") {
+      setCanAdvance(false);
+      setTimeout(() => {
+        setTelop(null);
+        afterTelop();
+      }, 1800);
+    } else {
+      afterTelop();
+    }
+  }, [advance, currentIndex, currentVideo, fetchCards, gachaId, normalizedSequence.length, scenario]);
+
+  const handleSkip = useCallback(() => {
+    if (!scenario) return;
+    setTelop(null);
+    void fetchCards(gachaId, scenario.star);
+    setStatus("card");
+    setCanAdvance(false);
+  }, [fetchCards, gachaId, scenario]);
 
   // isAuto反映
   useEffect(() => {
@@ -333,7 +408,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
               setCurrentIndex(0);
               setIsAuto(false);
               isAutoRef.current = false;
-              setResultKind(null);
               lastResultRef.current = null;
             }}
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-lg transition hover:bg-black/90 hover:text-white"
@@ -344,16 +418,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
             </svg>
           </button>
         </div>
-      )}
-
-      {status === "result" && scenario && resultKind && (
-        <FinalResultTelop
-          kind={resultKind}
-          onClose={async () => {
-            await fetchCards(gachaId, scenario.star);
-            setStatus("card");
-          }}
-        />
       )}
 
       {status === "card" && scenario && (
@@ -372,151 +436,7 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
           70% { transform: scale(1.05) translateZ(50px) rotateX(-5deg); }
           100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; }
         }
-        @keyframes rise {
-          0% { transform: translateY(20px) scale(0.8); opacity: 0; }
-          30% { opacity: 1; }
-          70% { opacity: 0.9; }
-          100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
-        }
       `}</style>
-    </div>
-  );
-}
-
-function resolveResultKind(scenario: Scenario, lastResult: ResultType | null): ResultKind {
-  if (lastResult === "tsuigeki_chance") return "chase";
-  if (lastResult === "tsuigeki_success") return "jackpot";
-  if (lastResult === "tsuigeki_fail") return "lose";
-
-  if (scenario.has_tsuigeki) {
-    if (scenario.tsuigeki_result === "success") return "jackpot";
-    if (scenario.tsuigeki_result === "fail") return "lose";
-  }
-
-  if (scenario.star >= 10) return scenario.result === "win" ? "jackpot" : "lose";
-  if (scenario.star >= 8) return scenario.result === "win" ? "big_win" : "lose";
-  if (scenario.star >= 4) return scenario.result === "win" ? "win" : "lose";
-  return "lose";
-}
-
-type FinalTelopProps = {
-  kind: ResultKind;
-  onClose: () => void;
-};
-
-function FinalResultTelop({ kind, onClose }: FinalTelopProps) {
-  const config = useMemo(() => {
-    switch (kind) {
-      case "lose":
-        return {
-          bg: "from-gray-950 via-gray-900 to-black",
-          main: "ハズレ",
-          sub: "残念...",
-          mainClass: "text-red-400",
-          duration: 3000,
-        } as const;
-      case "win":
-        return {
-          bg: "from-indigo-900 via-purple-800 to-blue-900",
-          main: "当たり！",
-          sub: "おめでとう！",
-          mainClass: "text-amber-200",
-          duration: 4000,
-        } as const;
-      case "big_win":
-        return {
-          bg: "from-amber-500 via-orange-500 to-amber-700",
-          main: "大当たり！！",
-          sub: "凄いっす！！",
-          mainClass: "text-amber-100",
-          duration: 5000,
-        } as const;
-      case "jackpot":
-        return {
-          bg: "from-pink-500 via-purple-500 to-emerald-400",
-          main: "超大当たり！！！",
-          sub: "伝説降臨！！！",
-          mainClass: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200 bg-clip-text text-transparent",
-          duration: 6000,
-        } as const;
-      case "chase":
-      default:
-        return {
-          bg: "from-purple-800 via-amber-600 to-yellow-500",
-          main: "追撃チャンス！",
-          sub: "まだ終わらない...",
-          mainClass: "text-amber-200",
-          duration: 3000,
-        } as const;
-    }
-  }, [kind]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      onClose();
-    }, config.duration);
-    return () => clearTimeout(t);
-  }, [config.duration, onClose]);
-
-  return (
-    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-gradient-to-br ${config.bg} animate-[pulse_2s_ease-in-out_infinite]`}>
-      <div className="text-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]">
-        <div className={`text-6xl font-black tracking-[0.08em] sm:text-7xl md:text-8xl ${config.mainClass}`}>
-          {config.main}
-        </div>
-        <div className="mt-4 text-xl font-semibold text-white/90">{config.sub}</div>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute bottom-10 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-xs uppercase tracking-[0.3em] text-white shadow-lg"
-      >
-        もう一度
-      </button>
-      <ParticleField kind={kind} />
-    </div>
-  );
-}
-
-function ParticleField({ kind }: { kind: ResultKind }) {
-  const colors = useMemo(() => {
-    if (kind === "lose") return ["#7f1d1d", "#111827", "#1f2937"];
-    if (kind === "win") return ["#c084fc", "#60a5fa", "#eab308"];
-    if (kind === "big_win") return ["#fbbf24", "#f59e0b", "#f97316"];
-    if (kind === "jackpot") return ["#f472b6", "#c084fc", "#34d399", "#facc15"];
-    return ["#facc15", "#a855f7", "#fbbf24"]; // chase
-  }, [kind]);
-
-  const particles = useMemo(() => {
-    const pseudo = (seed: number) => (Math.sin(seed * 999) + 1) / 2;
-    return Array.from({ length: 40 }, (_, i) => {
-      const delay = (i % 10) * 0.2;
-      const duration = 4 + (i % 5);
-      const size = 6 + (i % 8);
-      const left = pseudo(i + 1) * 100;
-      const top = pseudo(i + 11) * 100;
-      const color = colors[i % colors.length];
-      return { delay, duration, size, left, top, color, key: i };
-    });
-  }, [colors]);
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {particles.map((p) => (
-        <span
-          key={p.key}
-          className="absolute rounded-full blur-sm"
-          style={{
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            opacity: 0.9,
-            animation: `rise ${p.duration}s ease-in-out ${p.delay}s infinite`,
-          }}
-        />
-      ))}
     </div>
   );
 }
