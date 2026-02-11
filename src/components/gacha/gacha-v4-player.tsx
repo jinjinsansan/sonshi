@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { ResultDisplay } from "@/lib/gacha/v3/types";
 import type { StoryPlay, StorySequenceItem } from "@/lib/gacha/v4/types";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
@@ -68,44 +69,232 @@ function pickCountdown(star: number) {
   return ordered[ordered.length - 1];
 }
 
-function getTelopTheme(color: ResultDisplay["color"]) {
-  switch (color) {
-    case "green":
+type TelopVariant = "continue" | "win" | "big_win" | "jackpot" | "lose" | "chase";
+type ParticleMode = "electric" | "burst" | "confetti" | "ash" | "swirl";
+
+type TelopConfig = {
+  overlayStyle: CSSProperties;
+  textClass: string;
+  glowClass: string;
+  stroke: string;
+  sizeClass: string;
+  shadow: string;
+  flash?: {
+    color: string;
+    animation: string;
+  };
+  motionAnimation?: string;
+  textAnimation?: string;
+  glowAnimation?: string;
+};
+
+type ParticlePreset = {
+  modes: ParticleMode[];
+  colors: string[];
+  count: number;
+  gravity: number;
+  blendMode: GlobalCompositeOperation;
+};
+
+function resolveTelopVariant(telop: ResultDisplay): TelopVariant {
+  if (telop.type === "continue") return "continue";
+  if (telop.type === "lose" || telop.type === "tsuigeki_fail") return "lose";
+  if (telop.type === "tsuigeki_chance") return "chase";
+  if (telop.type === "tsuigeki_success") return "jackpot";
+  const text = telop.text ?? "";
+  if (text.includes("超")) return "jackpot";
+  if (text.includes("大当たり")) return "big_win";
+  return "win";
+}
+
+function getTelopConfig(variant: TelopVariant): TelopConfig {
+  switch (variant) {
+    case "continue":
       return {
-        textClass: "text-emerald-200",
-        glowClass: "text-emerald-300/70",
-        stroke: "rgba(13, 148, 136, 0.6)",
+        overlayStyle: {
+          background:
+            "radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.22), transparent 50%), radial-gradient(circle at 80% 40%, rgba(0, 255, 255, 0.18), transparent 55%), rgba(0, 0, 0, 0.45)",
+        },
+        textClass: "bg-gradient-to-r from-[#00d4ff] via-[#00ffff] to-[#7ce7ff] bg-clip-text text-transparent",
+        glowClass: "text-cyan-300/80",
+        stroke: "4px rgba(255, 255, 255, 0.95)",
+        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
+        shadow: "0 0 25px rgba(0, 212, 255, 0.7), 0 0 45px rgba(0, 212, 255, 0.55), 0 0 12px rgba(0, 0, 0, 0.9)",
+        flash: {
+          color: "rgba(255, 255, 255, 0.9)",
+          animation: "telop-flash 0.16s ease-out",
+        },
+        motionAnimation: "telop-jitter 0.16s linear 0.65s 6",
+        glowAnimation: "telop-glow 1.2s ease-in-out 0.8s 2",
       };
-    case "red":
+    case "win":
       return {
-        textClass: "text-red-300",
-        glowClass: "text-red-400/70",
-        stroke: "rgba(239, 68, 68, 0.65)",
+        overlayStyle: {
+          background:
+            "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 215, 0, 0.35) 100%), rgba(0, 0, 0, 0.5)",
+        },
+        textClass:
+          "bg-gradient-to-b from-[#ffd700] via-[#ffb700] to-[#ff8c00] bg-clip-text text-transparent",
+        glowClass: "text-amber-300/80",
+        stroke: "5px rgba(220, 38, 38, 0.85)",
+        sizeClass: "text-[20vw] sm:text-[15vw] md:text-[12vw]",
+        shadow: "0 0 35px rgba(255, 215, 0, 0.75), 0 0 60px rgba(255, 140, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.9)",
+        flash: {
+          color: "rgba(255, 255, 255, 0.95)",
+          animation: "telop-flash 0.2s ease-out",
+        },
+        motionAnimation: "telop-pulse 1.2s ease-in-out 0.9s 2",
+        glowAnimation: "telop-glow 1.4s ease-in-out 0.8s 2",
       };
-    case "rainbow":
+    case "big_win":
       return {
-        textClass: "bg-gradient-to-r from-red-300 via-yellow-200 to-blue-300 bg-clip-text text-transparent",
-        glowClass: "bg-gradient-to-r from-red-400 via-yellow-300 to-blue-400 bg-clip-text text-transparent opacity-80",
-        stroke: "rgba(255, 255, 255, 0.4)",
+        overlayStyle: {
+          background:
+            "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 140, 0, 0.45) 100%), rgba(0, 0, 0, 0.55)",
+        },
+        textClass:
+          "bg-gradient-to-b from-[#ffe082] via-[#ffb74d] to-[#ff7043] bg-clip-text text-transparent",
+        glowClass: "text-orange-300/80",
+        stroke: "5px rgba(239, 68, 68, 0.85)",
+        sizeClass: "text-[22vw] sm:text-[16vw] md:text-[13vw]",
+        shadow: "0 0 45px rgba(255, 193, 7, 0.8), 0 0 80px rgba(255, 112, 67, 0.6), 0 0 18px rgba(0, 0, 0, 0.9)",
+        flash: {
+          color: "rgba(255, 255, 255, 0.98)",
+          animation: "telop-flash 0.22s ease-out",
+        },
+        motionAnimation: "telop-shake 0.22s ease-in-out 0.6s 5",
+        glowAnimation: "telop-glow 1.5s ease-in-out 0.8s 2",
       };
-    case "gold":
+    case "jackpot":
       return {
-        textClass: "bg-gradient-to-b from-amber-100 via-amber-300 to-amber-500 bg-clip-text text-transparent",
-        glowClass: "bg-gradient-to-b from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent opacity-80",
-        stroke: "rgba(251, 191, 36, 0.55)",
+        overlayStyle: {
+          background:
+            "radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.35), transparent 50%), radial-gradient(circle at 70% 40%, rgba(0, 255, 255, 0.25), transparent 55%), linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 215, 0, 0.4) 100%), rgba(0, 0, 0, 0.55)",
+        },
+        textClass:
+          "bg-[conic-gradient(from_90deg,#ff4d4d,#ffd93d,#6cffb7,#44a3ff,#c77dff,#ff4d4d)] bg-clip-text text-transparent",
+        glowClass: "text-white/80",
+        stroke: "5px rgba(255, 255, 255, 0.85)",
+        sizeClass: "text-[24vw] sm:text-[17vw] md:text-[14vw]",
+        shadow: "0 0 55px rgba(255, 255, 255, 0.75), 0 0 90px rgba(255, 215, 0, 0.65), 0 0 20px rgba(0, 0, 0, 0.9)",
+        flash: {
+          color: "rgba(255, 255, 255, 0.98)",
+          animation: "telop-flash 0.24s ease-out",
+        },
+        motionAnimation: "telop-shake 0.26s ease-in-out 0.55s 6",
+        glowAnimation: "telop-glow 1.6s ease-in-out 0.8s 3",
       };
-    case "gray":
+    case "lose":
       return {
-        textClass: "text-gray-200",
-        glowClass: "text-gray-300/70",
-        stroke: "rgba(148, 163, 184, 0.55)",
+        overlayStyle: {
+          background:
+            "radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(36, 0, 0, 0.8) 70%), rgba(0, 0, 0, 0.6)",
+        },
+        textClass: "bg-gradient-to-b from-[#c7c7c7] via-[#9b1c1c] to-[#4b0b0b] bg-clip-text text-transparent",
+        glowClass: "text-red-900/70",
+        stroke: "4px rgba(0, 0, 0, 0.85)",
+        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
+        shadow: "0 0 25px rgba(0, 0, 0, 0.9), 0 0 18px rgba(128, 0, 0, 0.7)",
+        flash: {
+          color: "rgba(90, 0, 0, 0.85)",
+          animation: "telop-flash 0.12s ease-out",
+        },
+        motionAnimation: "telop-shake 0.18s ease-in-out 0.45s 6",
+        textAnimation: "telop-fade 1.1s ease-out 0.9s 1",
+        glowAnimation: "telop-glow 1.2s ease-in-out 0.9s 1",
       };
-    case "none":
+    case "chase":
     default:
       return {
-        textClass: "text-white",
-        glowClass: "text-white/70",
-        stroke: "rgba(255, 255, 255, 0.4)",
+        overlayStyle: {
+          background:
+            "radial-gradient(circle at 30% 30%, rgba(155, 48, 255, 0.35), transparent 55%), radial-gradient(circle at 70% 60%, rgba(255, 215, 0, 0.25), transparent 60%), rgba(0, 0, 0, 0.5)",
+        },
+        textClass: "bg-gradient-to-r from-[#9b30ff] via-[#c77dff] to-[#ffd700] bg-clip-text text-transparent",
+        glowClass: "text-purple-300/80",
+        stroke: "4px rgba(255, 255, 255, 0.8)",
+        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
+        shadow: "0 0 35px rgba(155, 48, 255, 0.7), 0 0 55px rgba(255, 215, 0, 0.6), 0 0 12px rgba(0, 0, 0, 0.9)",
+        flash: {
+          color: "rgba(255, 255, 255, 0.9)",
+          animation: "telop-flash 0.16s ease-out",
+        },
+        motionAnimation: "telop-pulse 0.9s ease-in-out 0.6s 2",
+        glowAnimation: "telop-glow 1.2s ease-in-out 0.7s 2",
+      };
+  }
+}
+
+function getTelopDuration(telop: ResultDisplay) {
+  const variant = resolveTelopVariant(telop);
+  switch (variant) {
+    case "continue":
+      return 1500;
+    case "win":
+      return 3000;
+    case "big_win":
+      return 4000;
+    case "jackpot":
+      return 5000;
+    case "lose":
+      return 2000;
+    case "chase":
+      return 2000;
+    default:
+      return 1800;
+  }
+}
+
+function getParticlePreset(variant: TelopVariant): ParticlePreset {
+  switch (variant) {
+    case "continue":
+      return {
+        modes: ["electric"],
+        colors: ["#00d4ff", "#00ffff", "#7ce7ff"],
+        count: 70,
+        gravity: 0,
+        blendMode: "lighter",
+      };
+    case "win":
+      return {
+        modes: ["burst"],
+        colors: ["#ffd700", "#ffb700", "#ff8c00", "#ff6f00"],
+        count: 90,
+        gravity: 0.05,
+        blendMode: "lighter",
+      };
+    case "big_win":
+      return {
+        modes: ["burst", "confetti"],
+        colors: ["#ffd700", "#ffb74d", "#ff7043", "#ff5252"],
+        count: 130,
+        gravity: 0.06,
+        blendMode: "lighter",
+      };
+    case "jackpot":
+      return {
+        modes: ["burst", "confetti", "confetti"],
+        colors: ["#ff4d4d", "#ffd93d", "#6cffb7", "#44a3ff", "#c77dff"],
+        count: 170,
+        gravity: 0.065,
+        blendMode: "lighter",
+      };
+    case "lose":
+      return {
+        modes: ["ash"],
+        colors: ["#c7c7c7", "#a33", "#5f2020"],
+        count: 55,
+        gravity: 0.12,
+        blendMode: "source-over",
+      };
+    case "chase":
+    default:
+      return {
+        modes: ["swirl", "electric"],
+        colors: ["#9b30ff", "#ffd700", "#d4a5ff"],
+        count: 85,
+        gravity: 0.02,
+        blendMode: "lighter",
       };
   }
 }
@@ -117,12 +306,10 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
   const [gachaId, setGachaId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [canAdvance, setCanAdvance] = useState(false);
-  const [isAuto, setIsAuto] = useState(false);
   const [telop, setTelop] = useState<ResultDisplay | null>(null);
   const [cards, setCards] = useState<CardData[] | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const isAutoRef = useRef(false);
 
   const resetAll = useCallback(() => {
     setStatus("idle");
@@ -131,8 +318,6 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     setCards(null);
     setCurrentIndex(0);
     setCanAdvance(false);
-    setIsAuto(false);
-    isAutoRef.current = false;
     setTelop(null);
   }, []);
 
@@ -231,8 +416,6 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     setCards(null);
     setCurrentIndex(0);
     setCanAdvance(false);
-    setIsAuto(false);
-    isAutoRef.current = false;
     setTelop(null);
     try {
       const res = await fetch("/api/gacha/v4/play", { method: "POST" });
@@ -300,11 +483,7 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
     const afterTelop = () => {
       if (rd?.show_next_button && currentIndex < normalizedSequence.length - 1) {
-        if (isAutoRef.current) {
-          setTimeout(() => advance(), 100);
-        } else {
-          setCanAdvance(true);
-        }
+        setCanAdvance(true);
       } else {
         void fetchCards(gachaId, story.star);
         setStatus("card");
@@ -313,14 +492,15 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
     if (rd && rd.type !== "none") {
       setCanAdvance(false);
+      const duration = getTelopDuration(rd);
       setTimeout(() => {
         setTelop(null);
         afterTelop();
-      }, 1800);
+      }, duration);
     } else {
       afterTelop();
     }
-  }, [advance, currentIndex, currentVideo, fetchCards, gachaId, normalizedSequence.length, story]);
+  }, [currentIndex, currentVideo, fetchCards, gachaId, normalizedSequence.length, story]);
 
   const handleSkip = useCallback(() => {
     if (!story) return;
@@ -329,11 +509,6 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     setStatus("card");
     setCanAdvance(false);
   }, [fetchCards, gachaId, story]);
-
-  // isAuto反映
-  useEffect(() => {
-    isAutoRef.current = isAuto;
-  }, [isAuto]);
 
   // ESCで閉じる
   useEffect(() => {
@@ -357,7 +532,6 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
       document.body.style.overflow = "";
       const tabBar = document.querySelector("nav") as HTMLElement | null;
       if (tabBar) tabBar.style.display = "";
-      isAutoRef.current = false;
     }
   }, [status]);
 
@@ -387,44 +561,13 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
             autoPlay
             controls={false}
             onPlay={() => {
-              if (!isAutoRef.current) setCanAdvance(true);
+              setCanAdvance(true);
             }}
             onEnded={handleEnded}
             onError={handleEnded}
           />
 
-          {telop && telop.type !== "none" && (
-            <div className="pointer-events-none absolute inset-0 z-[120] flex items-center justify-center bg-black/60">
-              {(() => {
-                const theme = getTelopTheme(telop.color);
-                return (
-                  <div
-                    className="px-6 py-4 text-center"
-                    style={{
-                      animation: "telop-emerge 0.95s cubic-bezier(0.16, 1.2, 0.36, 1) forwards",
-                      transform: "scale(0.05)",
-                      opacity: 0,
-                    }}
-                  >
-                    <div className="relative">
-                      <span
-                        aria-hidden
-                        className={`absolute inset-0 translate-y-1 text-6xl font-black tracking-[0.2em] blur-2xl ${theme.glowClass}`}
-                      >
-                        {telop.text}
-                      </span>
-                      <span
-                        className={`relative font-display text-6xl font-black tracking-[0.2em] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)] sm:text-7xl md:text-8xl ${theme.textClass}`}
-                        style={{ WebkitTextStroke: `2px ${theme.stroke}` }}
-                      >
-                        {telop.text}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+          {telop && telop.type !== "none" && <TelopOverlay telop={telop} />}
 
           {/* Footer buttons (no counter) */}
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
@@ -432,51 +575,37 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!canAdvance || isAuto}
-                className="pointer-events-auto group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95 disabled:opacity-50"
+                disabled={!canAdvance}
+                className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-50"
               >
-                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
+                <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
+                <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
                     NEXT
                   </span>
-                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">次へ</span>
+                  <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">次へ</span>
                 </div>
+                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
               </button>
 
               <button
                 type="button"
-                onClick={() => setIsAuto(!isAuto)}
-                className={`pointer-events-auto group relative h-32 w-32 rounded-full transition-all active:scale-95 ${
-                  isAuto
-                    ? "bg-gradient-to-b from-yellow-400 via-yellow-500 to-yellow-600 shadow-[0_8px_32px_rgba(234,179,8,0.7),0_0_80px_rgba(234,179,8,0.5),inset_0_2px_8px_rgba(255,255,255,0.4),inset_0_-4px_12px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_40px_rgba(234,179,8,0.9),0_0_100px_rgba(234,179,8,0.7)]"
-                    : "bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-900 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_60px_rgba(0,0,0,0.4),inset_0_2px_8px_rgba(255,255,255,0.2),inset_0_-4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.8),0_0_80px_rgba(0,0,0,0.6)]"
-                }`}
+                onClick={handleSkip}
+                className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95"
               >
-                <div
-                  className={`absolute inset-2 rounded-full shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)] ${
-                    isAuto
-                      ? "bg-gradient-to-b from-yellow-300 to-yellow-500"
-                      : "bg-gradient-to-b from-zinc-600 to-zinc-800"
-                  }`}
-                />
+                <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
+                <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                    AUTO
+                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                    SKIP
                   </span>
-                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">{isAuto ? "ON" : "OFF"}</span>
+                  <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">スキップ</span>
                 </div>
+                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
               </button>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="absolute right-4 top-4 z-[130] flex h-12 items-center gap-2 rounded-full bg-black/80 px-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-lg transition hover:bg-black"
-          >
-            SKIP
-          </button>
         </div>
       )}
 
@@ -491,9 +620,363 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
           70% { transform: scale(1.18) translateZ(140px) rotateX(-6deg); filter: blur(0); }
           100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; filter: blur(0); }
         }
+
+        @keyframes telop-flash {
+          0% { opacity: 0; }
+          30% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+
+        @keyframes telop-jitter {
+          0% { transform: translate(0, 0); }
+          20% { transform: translate(2px, -2px); }
+          40% { transform: translate(-2px, 2px); }
+          60% { transform: translate(3px, 0); }
+          80% { transform: translate(-3px, -1px); }
+          100% { transform: translate(0, 0); }
+        }
+
+        @keyframes telop-shake {
+          0% { transform: translate(0, 0); }
+          25% { transform: translate(-6px, 4px); }
+          50% { transform: translate(6px, -4px); }
+          75% { transform: translate(-4px, -6px); }
+          100% { transform: translate(0, 0); }
+        }
+
+        @keyframes telop-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+
+        @keyframes telop-glow {
+          0%, 100% { opacity: 0.6; filter: blur(16px); }
+          50% { opacity: 1; filter: blur(24px); }
+        }
+
+        @keyframes telop-fade {
+          0% { opacity: 1; }
+          100% { opacity: 0.7; }
+        }
       `}</style>
     </div>
   );
+}
+
+type TelopOverlayProps = {
+  telop: ResultDisplay;
+};
+
+function TelopOverlay({ telop }: TelopOverlayProps) {
+  const variant = useMemo(() => resolveTelopVariant(telop), [telop]);
+  const config = useMemo(() => getTelopConfig(variant), [variant]);
+  const motionStyle: CSSProperties | undefined = config.motionAnimation
+    ? { animation: config.motionAnimation }
+    : undefined;
+  const glowStyle: CSSProperties | undefined = config.glowAnimation
+    ? { animation: config.glowAnimation }
+    : undefined;
+  const textStyle: CSSProperties = {
+    WebkitTextStroke: config.stroke,
+    textShadow: config.shadow,
+    animation: config.textAnimation,
+  };
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[120] flex items-center justify-center" style={config.overlayStyle}>
+      {config.flash && (
+        <div
+          className="absolute inset-0 opacity-0"
+          style={{ background: config.flash.color, animation: config.flash.animation }}
+        />
+      )}
+      <TelopParticles variant={variant} />
+      <div
+        className="relative px-6 py-4 text-center"
+        style={{
+          animation: "telop-emerge 0.95s cubic-bezier(0.16, 1.2, 0.36, 1) forwards",
+          transform: "scale(0.05)",
+          opacity: 0,
+        }}
+      >
+        <div className="relative" style={motionStyle}>
+          <span
+            aria-hidden
+            className={`absolute inset-0 translate-y-1 font-body font-black tracking-[0.2em] blur-2xl mix-blend-screen ${config.sizeClass} ${config.glowClass}`}
+            style={glowStyle}
+          >
+            {telop.text}
+          </span>
+          <span
+            className={`relative font-body font-black tracking-[0.2em] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)] ${config.sizeClass} ${config.textClass}`}
+            style={textStyle}
+          >
+            {telop.text}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  life: number;
+  ttl: number;
+  rotation: number;
+  spin: number;
+  color: string;
+  mode: ParticleMode;
+  angle: number;
+  radius: number;
+  length: number;
+};
+
+function initParticle(preset: ParticlePreset, width: number, height: number): Particle {
+  const mode = preset.modes[Math.floor(Math.random() * preset.modes.length)];
+  const color = preset.colors[Math.floor(Math.random() * preset.colors.length)];
+
+  if (mode === "electric") {
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      size: 1 + Math.random() * 2,
+      life: 20 + Math.random() * 20,
+      ttl: 40,
+      rotation: 0,
+      spin: 0,
+      color,
+      mode,
+      angle: Math.random() * Math.PI * 2,
+      radius: 0,
+      length: 20 + Math.random() * 40,
+    };
+  }
+
+  if (mode === "burst") {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    return {
+      x: width * 0.5,
+      y: height * 0.5,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 4 + Math.random() * 8,
+      life: 70 + Math.random() * 40,
+      ttl: 110,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.25,
+      color,
+      mode,
+      angle,
+      radius: 0,
+      length: 0,
+    };
+  }
+
+  if (mode === "confetti") {
+    return {
+      x: Math.random() * width,
+      y: -Math.random() * height * 0.2,
+      vx: (Math.random() - 0.5) * 1.6,
+      vy: 1 + Math.random() * 2.4,
+      size: 6 + Math.random() * 8,
+      life: 120 + Math.random() * 60,
+      ttl: 180,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.2,
+      color,
+      mode,
+      angle: 0,
+      radius: 0,
+      length: 0,
+    };
+  }
+
+  if (mode === "ash") {
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: 0.6 + Math.random() * 1.4,
+      size: 2 + Math.random() * 3,
+      life: 90 + Math.random() * 60,
+      ttl: 150,
+      rotation: 0,
+      spin: 0,
+      color,
+      mode,
+      angle: 0,
+      radius: 0,
+      length: 0,
+    };
+  }
+
+  const radius = 40 + Math.random() * 120;
+  const angle = Math.random() * Math.PI * 2;
+  return {
+    x: width * 0.5 + Math.cos(angle) * radius,
+    y: height * 0.5 + Math.sin(angle) * radius,
+    vx: 0,
+    vy: 0,
+    size: 3 + Math.random() * 5,
+    life: 100 + Math.random() * 80,
+    ttl: 160,
+    rotation: 0,
+    spin: 0.04 + Math.random() * 0.06,
+    color,
+    mode: "swirl",
+    angle,
+    radius,
+    length: 0,
+  };
+}
+
+function updateParticle(particle: Particle, preset: ParticlePreset, width: number, height: number) {
+  particle.life -= 1;
+  if (particle.life <= 0) {
+    Object.assign(particle, initParticle(preset, width, height));
+    return;
+  }
+
+  switch (particle.mode) {
+    case "electric":
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.angle += (Math.random() - 0.5) * 0.6;
+      break;
+    case "burst":
+      particle.vy += preset.gravity;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.rotation += particle.spin;
+      break;
+    case "confetti":
+      particle.vy += preset.gravity * 0.7;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.rotation += particle.spin;
+      break;
+    case "ash":
+      particle.vy += preset.gravity * 0.3;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      break;
+    case "swirl":
+      particle.angle += particle.spin;
+      particle.radius += 0.6;
+      particle.x = width * 0.5 + Math.cos(particle.angle) * particle.radius;
+      particle.y = height * 0.5 + Math.sin(particle.angle) * particle.radius;
+      break;
+    default:
+      break;
+  }
+
+  if (particle.x < -80 || particle.x > width + 80 || particle.y < -80 || particle.y > height + 80) {
+    particle.life = 0;
+  }
+}
+
+function drawParticle(ctx: CanvasRenderingContext2D, particle: Particle) {
+  const alpha = Math.max(particle.life / particle.ttl, 0);
+  ctx.globalAlpha = alpha;
+
+  if (particle.mode === "electric") {
+    ctx.strokeStyle = particle.color;
+    ctx.lineWidth = particle.size;
+    ctx.beginPath();
+    ctx.moveTo(particle.x, particle.y);
+    ctx.lineTo(
+      particle.x + Math.cos(particle.angle) * particle.length,
+      particle.y + Math.sin(particle.angle) * particle.length,
+    );
+    ctx.stroke();
+    return;
+  }
+
+  if (particle.mode === "ash" || particle.mode === "swirl") {
+    ctx.fillStyle = particle.color;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(particle.x, particle.y);
+  ctx.rotate(particle.rotation);
+  ctx.fillStyle = particle.color;
+  const width = particle.size;
+  const height = particle.mode === "confetti" ? particle.size * 1.8 : particle.size;
+  ctx.fillRect(-width * 0.5, -height * 0.5, width, height);
+  ctx.restore();
+}
+
+type TelopParticlesProps = {
+  variant: TelopVariant;
+};
+
+function TelopParticles({ variant }: TelopParticlesProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const preset = getParticlePreset(variant);
+    const isMobile = window.innerWidth < 768;
+    const cap = isMobile ? 50 : 100;
+    const count = Math.min(cap, Math.max(20, Math.round(preset.count * (isMobile ? 0.6 : 1))));
+    let width = canvas.parentElement?.clientWidth ?? window.innerWidth;
+    let height = canvas.parentElement?.clientHeight ?? window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const resize = () => {
+      width = canvas.parentElement?.clientWidth ?? window.innerWidth;
+      height = canvas.parentElement?.clientHeight ?? window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    resize();
+    const particles = Array.from({ length: count }, () => initParticle(preset, width, height));
+    let frame = 0;
+    let rafId = 0;
+
+    const render = () => {
+      frame += 1;
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = preset.blendMode;
+      for (const particle of particles) {
+        updateParticle(particle, preset, width, height);
+        drawParticle(ctx, particle);
+      }
+      ctx.globalCompositeOperation = "source-over";
+      if (frame < 600) {
+        rafId = requestAnimationFrame(render);
+      }
+    };
+
+    rafId = requestAnimationFrame(render);
+    window.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+    };
+  }, [variant]);
+
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" />;
 }
 
 type CardRevealProps = {

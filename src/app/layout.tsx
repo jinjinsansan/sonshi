@@ -11,7 +11,7 @@ const orbitron = Orbitron({
 
 const notoSans = Noto_Sans_JP({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "700", "900"],
   variable: "--font-body",
   display: "swap",
 });
