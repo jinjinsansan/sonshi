@@ -15,9 +15,9 @@ const FALLBACK_TICKETS: TicketBalanceItem[] = [
 const GACHA_CARDS = [
   {
     id: "ito",
-    title: "伊東ガチャ",
+    title: "伊藤ガチャ",
     description:
-      "いつも仕事を失敗ばかりしてしまう伊東は超厳しい尊師に認めてもらうことが出来るのか？",
+      "いつも仕事を失敗ばかりしてしまう伊藤は超厳しい尊師に認めてもらうことが出来るのか？",
     ticketNote: "ガチャは１チケット消費します",
     icon: "/ito.png",
     badge: "text-neon-blue",
