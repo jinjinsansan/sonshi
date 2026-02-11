@@ -88,8 +88,9 @@ export default async function GachaPage() {
         {GACHA_CARDS.map((card) => (
           <article
             key={card.id}
-            className="relative overflow-hidden rounded-3xl border border-white/12 bg-white/5 px-6 py-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+            className="relative overflow-hidden rounded-3xl border border-white/12 px-6 py-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)]"
           >
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl" />
             <div className={`absolute inset-0 bg-gradient-to-br ${card.accent}`} />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_60%)]" />
             <div className="absolute inset-0 border border-white/10" />
