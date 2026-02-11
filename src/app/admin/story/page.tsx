@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { requireAdminSession } from "@/lib/admin";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
+import { StorySequenceBuilder } from "@/components/admin/story-sequence-builder";
 
 const RESULTS = ["lose", "small_win", "win", "big_win", "jackpot"] as const;
 const DONDEN_TYPES = ["lose_to_win", "win_to_lose"] as const;
@@ -86,13 +87,15 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
   const svc = getSupabaseServiceClient();
   const table = (svc as any).from("story_scenarios");
   const dondenTable = (svc as any).from("donden_settings");
+  const videoTable = (svc as any).from("story_videos");
 
-  const [{ data: scenarioRows }, { data: dondenRows }] = await Promise.all([
+  const [{ data: scenarioRows }, { data: dondenRows }, { data: videoRows }] = await Promise.all([
     table
       .select("id, name, star_rating, result, video_sequence, has_chase, chase_result, is_donden, weight, is_active, updated_at")
       .order("star_rating", { ascending: true })
       .order("updated_at", { ascending: false }),
     dondenTable.select("type, probability"),
+    videoTable.select("id, category, filename, description").order("id", { ascending: true }),
   ]);
 
   const scenarios = (scenarioRows ?? []) as {
@@ -118,6 +121,13 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
   const dondenMap = new Map<string, number>(
     (dondenRows ?? []).map((row: { type: string; probability?: number | null }) => [row.type, Number(row.probability ?? 0)])
   );
+
+  const storyVideos = (videoRows ?? []) as {
+    id: string;
+    category: string;
+    filename: string;
+    description?: string | null;
+  }[];
 
   const error = searchParams ? (await searchParams).error : undefined;
 
@@ -152,7 +162,7 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
           </div>
           <div>
             <label className="text-xs text-zinc-300">動画IDシーケンス（カンマ/改行区切り）</label>
-            <textarea name="video_sequence" required className="min-h-[100px] w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white" placeholder="OP01, MS01, JD01" />
+            <StorySequenceBuilder videos={storyVideos} required />
           </div>
           <div className="grid grid-cols-3 gap-3 text-sm text-white">
             <label className="flex items-center gap-2">

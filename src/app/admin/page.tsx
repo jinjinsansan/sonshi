@@ -29,6 +29,11 @@ const shortcuts = [
     href: "/admin/rtp",
   },
   {
+    title: "ストーリー管理",
+    description: "シナリオ登録・重み・有効/無効",
+    href: "/admin/story",
+  },
+  {
     title: "どんでん返し設定",
     description: "win / small_win / lose の比率",
     href: "/admin/donden",
