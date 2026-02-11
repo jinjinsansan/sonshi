@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { ResultDisplay } from "@/lib/gacha/v3/types";
-import type { StoryPlay, StorySequenceItem } from "@/lib/gacha/v4/types";
+import type { StoryPlay, StoryResult, StorySequenceItem } from "@/lib/gacha/v4/types";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 
 type Status = "idle" | "loading" | "playing" | "card" | "error";
@@ -74,12 +74,21 @@ type ParticleMode = "electric" | "burst" | "confetti" | "ash" | "swirl";
 
 const TELOP_IMAGE_BASE = "/telop";
 
-const CONTINUE_TIER_IMAGES = [
-  { minStar: 10, file: "continue-5.png" },
-  { minStar: 8, file: "continue-4.png" },
-  { minStar: 6, file: "continue-3.png" },
-  { minStar: 4, file: "continue-2.png" },
-  { minStar: 1, file: "continue-1.png" },
+const CONTINUE_IMAGES = [
+  "continue-1.png",
+  "continue-2.png",
+  "continue-3.png",
+  "continue-4.png",
+  "continue-5.png",
+];
+
+const TELOP_IMAGE_FILES = [
+  ...CONTINUE_IMAGES,
+  "lose.png",
+  "win.png",
+  "big-win.png",
+  "jackpot.png",
+  "chase.png",
 ];
 
 type TelopConfig = {
@@ -102,27 +111,48 @@ type ParticlePreset = {
   blendMode: GlobalCompositeOperation;
 };
 
-function resolveTelopVariant(telop: ResultDisplay): TelopVariant {
+function mapStoryResultToVariant(result?: StoryResult): TelopVariant | null {
+  switch (result) {
+    case "lose":
+      return "lose";
+    case "big_win":
+      return "big_win";
+    case "jackpot":
+      return "jackpot";
+    case "small_win":
+    case "win":
+      return "win";
+    default:
+      return null;
+  }
+}
+
+function resolveTelopVariant(telop: ResultDisplay, storyResult?: StoryResult): TelopVariant {
   if (telop.type === "continue") return "continue";
-  if (telop.type === "lose" || telop.type === "tsuigeki_fail") return "lose";
   if (telop.type === "tsuigeki_chance") return "chase";
-  if (telop.type === "tsuigeki_success") return "jackpot";
+  if (telop.type === "lose") return "lose";
+  if (telop.type === "tsuigeki_success" || telop.type === "tsuigeki_fail") {
+    const fromStory = mapStoryResultToVariant(storyResult);
+    if (fromStory) return fromStory;
+    return telop.type === "tsuigeki_success" ? "jackpot" : "lose";
+  }
+  const fromStory = mapStoryResultToVariant(storyResult);
+  if (fromStory) return fromStory;
   const text = telop.text ?? "";
   if (text.includes("超")) return "jackpot";
   if (text.includes("大当たり")) return "big_win";
   return "win";
 }
 
-function getContinueTelopImage(star?: number) {
-  const rating = Number.isFinite(star) ? Math.max(1, Math.min(12, Math.floor(star ?? 1))) : 1;
-  const tier = CONTINUE_TIER_IMAGES.find((entry) => rating >= entry.minStar) ?? CONTINUE_TIER_IMAGES[CONTINUE_TIER_IMAGES.length - 1];
-  return `${TELOP_IMAGE_BASE}/${tier.file}`;
+function pickRandomContinueImage(seed = 0) {
+  const index = Math.floor((Math.random() + seed) * CONTINUE_IMAGES.length) % CONTINUE_IMAGES.length;
+  return `${TELOP_IMAGE_BASE}/${CONTINUE_IMAGES[index]}`;
 }
 
-function getTelopImagePath(variant: TelopVariant, star?: number) {
+function getTelopImagePath(variant: TelopVariant, continueImage?: string) {
   switch (variant) {
     case "continue":
-      return getContinueTelopImage(star);
+      return continueImage ?? `${TELOP_IMAGE_BASE}/${CONTINUE_IMAGES[0]}`;
     case "win":
       return `${TELOP_IMAGE_BASE}/win.png`;
     case "big_win":
@@ -313,6 +343,15 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
   const [cards, setCards] = useState<CardData[] | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (status !== "playing") return;
+    if (typeof window === "undefined") return;
+    TELOP_IMAGE_FILES.forEach((file) => {
+      const img = new window.Image();
+      img.src = `${TELOP_IMAGE_BASE}/${file}`;
+    });
+  }, [status]);
 
   const resetAll = useCallback(() => {
     setStatus("idle");
@@ -570,7 +609,9 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
             onError={handleEnded}
           />
 
-          {telop && telop.type !== "none" && <TelopOverlay telop={telop} star={story?.star} />}
+          {telop && telop.type !== "none" && (
+            <TelopOverlay telop={telop} storyResult={story?.result} sequenceIndex={currentIndex} />
+          )}
 
           {/* Footer buttons (no counter) */}
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
@@ -668,13 +709,18 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
 type TelopOverlayProps = {
   telop: ResultDisplay;
-  star?: number;
+  storyResult?: StoryResult;
+  sequenceIndex?: number;
 };
 
-function TelopOverlay({ telop, star }: TelopOverlayProps) {
-  const variant = useMemo(() => resolveTelopVariant(telop), [telop]);
+function TelopOverlay({ telop, storyResult, sequenceIndex }: TelopOverlayProps) {
+  const variant = useMemo(() => resolveTelopVariant(telop, storyResult), [storyResult, telop]);
   const config = useMemo(() => getTelopConfig(variant), [variant]);
-  const imagePath = useMemo(() => getTelopImagePath(variant, star), [star, variant]);
+  const continueImage = useMemo(
+    () => (variant === "continue" ? pickRandomContinueImage(sequenceIndex ?? 0) : undefined),
+    [sequenceIndex, variant],
+  );
+  const imagePath = useMemo(() => getTelopImagePath(variant, continueImage), [continueImage, variant]);
   const motionStyle: CSSProperties | undefined = config.motionAnimation
     ? { animation: config.motionAnimation }
     : undefined;
@@ -708,6 +754,8 @@ function TelopOverlay({ telop, star }: TelopOverlayProps) {
               fill
               sizes="(max-width: 640px) 80vw, (max-width: 1024px) 70vw, 60vw"
               className="object-contain"
+              unoptimized
+              priority
               style={imageStyle}
             />
           </div>
