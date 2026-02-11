@@ -18,11 +18,11 @@ const TICKET_CARD_META: Record<
     accent: string;
   }
 > = {
-  free: { title: "フリーガチャ", subtitle: "FREE FLOOR", accent: "text-neon-blue" },
-  basic: { title: "1階ガチャ", subtitle: "1ST FLOOR", accent: "text-amber-200" },
-  epic: { title: "2階ガチャ", subtitle: "2ND FLOOR", accent: "text-rose-200" },
-  premium: { title: "3階ガチャ", subtitle: "3RD FLOOR", accent: "text-purple-200" },
-  ex: { title: "VIPガチャ", subtitle: "VIP FLOOR", accent: "text-emerald-200" },
+  free: { title: "フリーチケット", subtitle: "FREE TICKET", accent: "text-neon-blue" },
+  basic: { title: "ベーシックチケット", subtitle: "BASIC TICKET", accent: "text-amber-200" },
+  epic: { title: "エピックチケット", subtitle: "EPIC TICKET", accent: "text-rose-200" },
+  premium: { title: "プレミアムチケット", subtitle: "PREMIUM TICKET", accent: "text-purple-200" },
+  ex: { title: "EXチケット", subtitle: "EX TICKET", accent: "text-emerald-200" },
 };
 
 function getTicketMeta(code: string) {

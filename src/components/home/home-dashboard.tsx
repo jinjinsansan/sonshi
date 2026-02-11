@@ -12,10 +12,10 @@ import type { TicketBalanceItem } from "@/lib/utils/tickets";
 
 const FALLBACK_TICKETS: TicketBalanceItem[] = [
   { code: "free", name: "フリーチケット", quantity: 0, colorToken: "neon-blue", sortOrder: 0 },
-  { code: "basic", name: "ベーシック", quantity: 0, colorToken: "neon-yellow", sortOrder: 1 },
-  { code: "epic", name: "エピック", quantity: 0, colorToken: "neon-pink", sortOrder: 2 },
-  { code: "premium", name: "プレミアム", quantity: 0, colorToken: "neon-purple", sortOrder: 3 },
-  { code: "ex", name: "EX", quantity: 0, colorToken: "glow-green", sortOrder: 4 },
+  { code: "basic", name: "ベーシックチケット", quantity: 0, colorToken: "neon-yellow", sortOrder: 1 },
+  { code: "epic", name: "エピックチケット", quantity: 0, colorToken: "neon-pink", sortOrder: 2 },
+  { code: "premium", name: "プレミアムチケット", quantity: 0, colorToken: "neon-purple", sortOrder: 3 },
+  { code: "ex", name: "EXチケット", quantity: 0, colorToken: "glow-green", sortOrder: 4 },
 ];
 
 const RARITY_LABELS = ["N", "R", "SR", "SSR", "UR"];
@@ -99,20 +99,18 @@ export function HomeDashboard() {
                   className={`flex items-center justify-between gap-4 rounded-3xl border border-white/12 bg-gradient-to-br ${ticketColors.bg} px-5 py-4 shadow-panel-inset`}
                 >
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-amber-300">1階フロア</p>
-                    <h3 className="font-display text-xl text-white">1階ガチャ</h3>
+                    <p className="text-xs uppercase tracking-[0.4em] text-amber-300">BASIC TICKET</p>
+                    <h3 className="font-display text-xl text-white">ベーシックチケット</h3>
                     <p className="text-[0.75rem] text-white/70">スタンダードなネオン演出がお楽しみいただけます。</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-display text-white">BASIC</p>
-                      <span className="text-[0.7rem] text-amber-200/80">TICKET FLOOR</span>
+                      <span className="text-[0.7rem] text-amber-200/80">TICKET</span>
                     </div>
                     <div className="flex gap-2 text-[0.65rem] text-amber-100/90">
                       <span className="rounded-full border border-white/20 px-3 py-1 uppercase tracking-[0.35em]">
                         {formatRarity(tier.rarityRange)}
                       </span>
-                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em]">
-                        1st FLOOR
-                      </span>
+                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em]">BASIC</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -143,16 +141,14 @@ export function HomeDashboard() {
                   className="flex items-center gap-5 rounded-3xl border border-white/12 bg-gradient-to-br from-[#2b0014] via-[#430029] to-[#070008] px-5 py-4 shadow-panel-inset"
                 >
                   <div className="flex-1 space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-rose-200">2階フロア</p>
-                    <h3 className="font-display text-xl text-white">2階ガチャ</h3>
+                    <p className="text-xs uppercase tracking-[0.4em] text-rose-200">EPIC TICKET</p>
+                    <h3 className="font-display text-xl text-white">エピックチケット</h3>
                     <p className="text-[0.75rem] text-white/75">熱量が一気に上がるエピック演出。ライティングが濃い贅沢空間を再現。</p>
                     <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
                       <span className="rounded-full border border-white/20 px-3 py-1 uppercase tracking-[0.35em]">
                         {formatRarity(tier.rarityRange)}
                       </span>
-                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-rose-200">
-                        2nd FLOOR
-                      </span>
+                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-rose-200">EPIC</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -183,16 +179,14 @@ export function HomeDashboard() {
                   className="flex items-center gap-5 rounded-3xl border border-white/12 bg-gradient-to-br from-[#1c0030] via-[#2f0150] to-[#05000a] px-5 py-4 shadow-panel-inset"
                 >
                   <div className="flex-1 space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-purple-200">3階フロア</p>
-                    <h3 className="font-display text-xl text-white">3階ガチャ</h3>
-                    <p className="text-[0.75rem] text-white/75">光と霧が交差するプレミアムフロア。重厚な演出と希少カードが待っています。</p>
+                    <p className="text-xs uppercase tracking-[0.4em] text-purple-200">PREMIUM TICKET</p>
+                    <h3 className="font-display text-xl text-white">プレミアムチケット</h3>
+                    <p className="text-[0.75rem] text-white/75">光と霧が交差するプレミアム演出。重厚な演出と希少カードが待っています。</p>
                     <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
                       <span className="rounded-full border border-white/20 px-3 py-1 uppercase tracking-[0.35em]">
                         {formatRarity(tier.rarityRange)}
                       </span>
-                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-purple-200">
-                        3rd FLOOR
-                      </span>
+                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-purple-200">PREMIUM</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -223,16 +217,14 @@ export function HomeDashboard() {
                   className="flex items-center gap-5 rounded-3xl border border-white/12 bg-gradient-to-br from-[#032415] via-[#064030] to-[#010b06] px-5 py-4 shadow-panel-inset"
                 >
                   <div className="flex-1 space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-emerald-200">VIPフロア</p>
-                    <h3 className="font-display text-xl text-white">VIPガチャ</h3>
-                    <p className="text-[0.75rem] text-white/75">最上階のプライベートホール。フィナーレ演出とEXカードがここで待っています。</p>
+                    <p className="text-xs uppercase tracking-[0.4em] text-emerald-200">EX TICKET</p>
+                    <h3 className="font-display text-xl text-white">EXチケット</h3>
+                    <p className="text-[0.75rem] text-white/75">最上級のプライベートホール。フィナーレ演出とEXカードがここで待っています。</p>
                     <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
                       <span className="rounded-full border border-white/20 px-3 py-1 uppercase tracking-[0.35em]">
                         {formatRarity(tier.rarityRange)}
                       </span>
-                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-emerald-200">
-                        VIP FLOOR
-                      </span>
+                      <span className="rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.35em] text-emerald-200">EX</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -263,8 +255,8 @@ export function HomeDashboard() {
                   className="flex items-center justify-between gap-4 rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b0416] via-[#1a0a22] to-[#050006] px-5 py-4 shadow-panel-inset"
                 >
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">FREE GACHA</p>
-                    <h3 className="font-display text-xl text-white">フリーガチャ</h3>
+                    <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">FREE TICKET</p>
+                    <h3 className="font-display text-xl text-white">フリーチケット</h3>
                     <p className="text-[0.75rem] text-white/70">ログインボーナスのチケットで挑戦できます。</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-4xl font-display text-white">{loginBonus.state.quantity ?? 0}</p>
