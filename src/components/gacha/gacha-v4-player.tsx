@@ -350,6 +350,7 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
   const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [revealedCardCount, setRevealedCardCount] = useState<number | null>(null);
 
   useEffect(() => {
     setPortalTarget(document.body);
@@ -372,6 +373,7 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
     setCurrentIndex(0);
     setCanAdvance(false);
     setTelop(null);
+    setRevealedCardCount(null);
   }, []);
 
   const normalizedSequence: StorySequenceWithDisplay[] = useMemo(() => {
@@ -488,19 +490,31 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
   }, []);
 
   const fetchCards = useCallback(async (id: string | null, star: number) => {
+    if (!id) {
+      setCards(null);
+      setRevealedCardCount(null);
+      return;
+    }
     setCardLoading(true);
     try {
-      const res = await fetch("/api/gacha/v3/result", {
+      const res = await fetch("/api/gacha/v4/result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gacha_id: id }),
       });
-      const data = (await res.json()) as { cards?: CardData[] };
+      const data = (await res.json()) as { cards?: CardData[]; card_count?: number; error?: string };
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error ?? "結果の取得に失敗しました");
+      }
       const payload = (data.cards ?? []).map((c) => ({ ...c, star: c.star ?? star }));
       setCards(payload.length ? payload : null);
+      setRevealedCardCount(
+        typeof data.card_count === "number" ? data.card_count : payload.length ? payload.length : null,
+      );
     } catch (err) {
       console.error("fetch cards failed", err);
       setCards(null);
+      setRevealedCardCount(null);
     } finally {
       setCardLoading(false);
     }
@@ -666,7 +680,13 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
 
   const cardOverlay =
     status === "card" && story ? (
-      <CardReveal story={story} cards={cards} loading={cardLoading} onClose={resetAll} />
+      <CardReveal
+        story={story}
+        cards={cards}
+        loading={cardLoading}
+        onClose={resetAll}
+        cardCount={revealedCardCount}
+      />
     )
     : null;
 
@@ -1078,77 +1098,126 @@ type CardRevealProps = {
   cards: CardData[] | null;
   loading: boolean;
   onClose: () => void;
+  cardCount?: number | null;
 };
 
-function CardReveal({ story, cards, loading, onClose }: CardRevealProps) {
-  const fallback: CardData = {
-    id: "demo-iraira",
-    name: "イライラ尊師",
-    image_url: "/iraira.png",
-    star: story.star,
-    serial_number: null,
+function CardReveal({ story, cards, loading, onClose, cardCount }: CardRevealProps) {
+  const list = cards ?? [];
+  const inferredCount = (() => {
+    if (typeof cardCount === "number") return cardCount;
+    if (story.result === "lose") return 0;
+    if (story.result === "big_win") return 2;
+    if (story.result === "jackpot") return 3;
+    return 1;
+  })();
+
+  const displayCount = list.length || inferredCount;
+  const resultLabel = (() => {
+    switch (story.result) {
+      case "jackpot":
+        return "超大当たり";
+      case "big_win":
+        return "大当たり";
+      case "win":
+      case "small_win":
+        return "当たり";
+      case "lose":
+        return "ハズレ";
+      default:
+        return "結果";
+    }
+  })();
+
+  let gridClass = "grid gap-6 w-full";
+  if (list.length <= 1) {
+    gridClass += " max-w-sm mx-auto";
+  } else if (list.length === 2) {
+    gridClass += " grid-cols-1 sm:grid-cols-2";
+  } else {
+    gridClass += " grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+  }
+
+  const renderBody = () => {
+    if (loading) {
+      return <p className="text-sm text-center text-white/80">カードを取得中...</p>;
+    }
+    if (!list.length) {
+      if (displayCount === 0) {
+        return <p className="text-sm text-center text-white/80">カードはありません</p>;
+      }
+      return (
+        <p className="text-sm text-center text-white/80">
+          カード情報を取得できませんでした。時間をおいて再度お試しください。
+        </p>
+      );
+    }
+
+    return (
+      <div className={gridClass}>
+        {list.map((card) => {
+          const displayName = card.name ?? "カード";
+          const displayStar = card.star ?? story.star;
+          return (
+          <div
+            key={card.id}
+            className="group relative flex flex-col gap-4 rounded-[28px] border border-white/12 bg-gradient-to-b from-white/10 via-white/5 to-black/60 p-4 shadow-[0_25px_55px_rgba(0,0,0,0.65)]"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[0.65rem] uppercase tracking-[0.35em] text-amber-200/80">★{displayStar}</p>
+                <p className="font-display text-xl text-white drop-shadow-[0_6px_25px_rgba(0,0,0,0.8)]">{displayName}</p>
+              </div>
+              {card.serial_number ? (
+                <span className="rounded-full border border-white/20 px-3 py-1 text-[0.7rem] text-white/80">
+                  No.{`${card.serial_number}`.padStart(3, "0")}
+                </span>
+              ) : null}
+            </div>
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[22px] border border-white/15 bg-black/40">
+              {card.image_url ? (
+                <Image
+                  src={card.image_url}
+                  alt={displayName}
+                  fill
+                  sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 320px"
+                  className="object-contain"
+                  priority
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm text-white/60">画像なし</div>
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+            </div>
+          </div>
+        );
+        })}
+      </div>
+    );
   };
 
-  const derivedCount = story.result === "lose" ? 0 : story.result === "big_win" ? 2 : story.result === "jackpot" ? 3 : 1;
-  const baseList = cards && cards.length ? cards : derivedCount === 0 ? [] : [fallback];
-  const list = derivedCount === 0
-    ? []
-    : baseList.length >= derivedCount
-      ? baseList.slice(0, derivedCount)
-      : [
-          ...baseList,
-          ...Array.from({ length: derivedCount - baseList.length }, (_, idx) => ({
-            ...fallback,
-            id: `${fallback.id}-${idx + baseList.length}`,
-          })),
-        ];
-  const count = list.length;
-
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-gradient-to-br from-black via-zinc-950 to-black">
-      <div className="relative flex w-full max-w-md flex-col items-center gap-6 rounded-[28px] border border-white/15 bg-[rgba(12,10,20,0.92)] p-6 shadow-[0_35px_80px_rgba(0,0,0,0.75)]">
-        <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Result</p>
-        <p className="text-2xl font-display text-white">★{story.star} / {count}枚</p>
+    <div className="fixed inset-0 z-[140] overflow-y-auto bg-gradient-to-b from-black/90 via-zinc-950/95 to-black/90 px-4 py-8">
+      <div className="relative mx-auto w-full max-w-5xl rounded-[32px] border border-white/15 bg-[rgba(10,8,18,0.95)] p-8 shadow-[0_40px_90px_rgba(0,0,0,0.85)]">
+        <div className="absolute -inset-px rounded-[32px] border border-white/5" />
+        <div className="relative space-y-2 text-center">
+          <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">GACHA RESULT</p>
+          <h2 className="font-display text-4xl text-white drop-shadow-[0_15px_45px_rgba(0,0,0,0.8)]">{resultLabel}</h2>
+          <p className="text-sm text-white/70">★{story.star} / {displayCount}枚</p>
+        </div>
 
-        {loading ? (
-          <p className="text-sm text-white/80">カードを取得中...</p>
-        ) : list.length === 0 ? (
-          <p className="text-sm text-white/80">カードはありません</p>
-        ) : (
-          <div className="w-full space-y-3">
-            {list.map((card) => (
-              <div key={card.id} className="relative overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-b from-white/10 to-black/40 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(236,72,153,0.2),transparent_40%)]" />
-                <div className="relative z-10 flex flex-col items-center gap-1 px-4 pb-2 pt-4 text-center">
-                  <p className="text-[11px] uppercase tracking-[0.4em] text-amber-200/80">★{card.star}</p>
-                  <p className="font-display text-lg text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">{card.name}</p>
-                </div>
-                <div className="relative z-10 px-4 pb-4">
-                  <Image
-                    src={card.image_url}
-                    alt={card.name}
-                    width={640}
-                    height={960}
-                    className="w-full object-contain"
-                    priority
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="relative mt-8">{renderBody()}</div>
 
-        <div className="flex w-full max-w-xs flex-col gap-3">
+        <div className="relative mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Link
             href="/collection"
-            className="rounded-full border border-white/20 bg-white/10 px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg transition hover:bg-white/20"
+            className="w-full rounded-full border border-white/20 bg-white/10 px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg transition hover:bg-white/20 sm:w-auto"
           >
             コレクションへ戻る
           </Link>
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon"
+            className="w-full rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon transition hover:brightness-110 sm:w-auto"
           >
             もう一度
           </button>

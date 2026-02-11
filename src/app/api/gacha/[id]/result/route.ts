@@ -36,13 +36,24 @@ export async function GET(request: NextRequest, context: Params) {
   }
 
   type ResultRow = { id: string; card_id: string | null };
-  const { data: existingResults } = await svc
+  const { data: primaryResults } = await svc
     .from("gacha_results")
     .select("id, card_id")
-    .eq("gacha_id", (history as any).id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("history_id", (history as any).id);
 
-  if (existingResults && existingResults.length > 0) {
+  let existingResults = (primaryResults ?? []) as ResultRow[];
+
+  if (!existingResults.length) {
+    const { data: fallbackResults } = await svc
+      .from("gacha_results")
+      .select("id, card_id")
+      .eq("user_id", user.id)
+      .eq("gacha_id", (history as any).id);
+    existingResults = (fallbackResults ?? []) as ResultRow[];
+  }
+
+  if (existingResults.length > 0) {
     const ids = existingResults.map((r: ResultRow) => r.id);
     type InventoryRow = { card_id: string | null; serial_number: number; gacha_result_id: string | null };
     const { data: inventoryRows } = await svc
@@ -140,7 +151,8 @@ export async function GET(request: NextRequest, context: Params) {
 
   const resultRows = picked.map((c) => ({
     user_id: user.id,
-    gacha_id: history.id,
+    gacha_id: null,
+    history_id: history.id,
     card_id: c.id,
     obtained_via: "gacha_v2",
     session_id: null,
