@@ -124,7 +124,7 @@ export function HomeDashboard() {
                       />
                     </div>
                     <Link
-                      href={`/gacha/${slug}`}
+                      href="/gacha"
                       className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-[0.7rem] uppercase tracking-[0.35em] text-white/85 transition hover:border-neon-yellow hover:text-white"
                     >
                       ガチャへ
@@ -162,7 +162,7 @@ export function HomeDashboard() {
                       />
                     </div>
                     <Link
-                      href={`/gacha/${slug}`}
+                      href="/gacha"
                       className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-[0.7rem] uppercase tracking-[0.35em] text-white/85 transition hover:border-neon-pink hover:text-white"
                     >
                       ガチャへ
@@ -200,7 +200,7 @@ export function HomeDashboard() {
                       />
                     </div>
                     <Link
-                      href={`/gacha/${slug}`}
+                      href="/gacha"
                       className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-[0.7rem] uppercase tracking-[0.35em] text-white/85 transition hover:border-neon-purple hover:text-white"
                     >
                       ガチャへ
@@ -238,7 +238,7 @@ export function HomeDashboard() {
                       />
                     </div>
                     <Link
-                      href={`/gacha/${slug}`}
+                      href="/gacha"
                       className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-[0.7rem] uppercase tracking-[0.35em] text-white/85 transition hover:border-green-300 hover:text-white"
                     >
                       ガチャへ
@@ -281,7 +281,7 @@ export function HomeDashboard() {
                       />
                     </div>
                     <Link
-                      href={`/gacha/${slug}`}
+                      href="/gacha"
                       className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-[0.7rem] uppercase tracking-[0.35em] text-white/80 transition hover:border-neon-blue hover:text-white"
                     >
                       ガチャへ
@@ -314,7 +314,7 @@ export function HomeDashboard() {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
-                    href={`/gacha/${slug}`}
+                    href="/gacha"
                     className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-xs uppercase tracking-[0.35em] text-black shadow-neon"
                   >
                     1回ガチャ
@@ -326,7 +326,7 @@ export function HomeDashboard() {
                     10連ガチャ
                   </Link>
                   <Link
-                    href={`/gacha/${slug}#rates`}
+                    href="/gacha"
                     className="inline-flex items-center justify-center rounded-full border border-transparent px-5 py-2 text-xs uppercase tracking-[0.35em] text-white/80 underline-offset-4 hover:text-white hover:underline"
                   >
                     提供割合

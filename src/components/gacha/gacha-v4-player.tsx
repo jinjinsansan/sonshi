@@ -9,6 +9,7 @@ import type { StoryPlay, StoryResult, StorySequenceItem } from "@/lib/gacha/v4/t
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 
 type Status = "idle" | "loading" | "playing" | "card" | "error";
+type PlayVariant = "default" | "round";
 
 type CardData = {
   id: string;
@@ -21,12 +22,16 @@ type CardData = {
 type Props = {
   playLabel?: string;
   playClassName?: string;
+  playVariant?: PlayVariant;
 };
 
 const DEFAULT_PLAY_CLASS =
   "w-full max-w-md rounded-[14px] border border-[#f1f3f5] bg-gradient-to-b from-[#fefefe] via-[#d8dce4] to-[#aab0bc] " +
   "px-8 py-4 text-base font-bold tracking-[0.08em] text-[#1a2230] shadow-[0_14px_30px_rgba(0,0,0,0.28),inset_0_2px_0_rgba(255,255,255,0.85),inset_0_-3px_0_rgba(0,0,0,0.2)] " +
   "transition hover:brightness-105 active:translate-y-0.5 disabled:opacity-60";
+
+const DEFAULT_ROUND_PLAY_CLASS =
+  "group relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-60";
 
 type GachaPlayResponse = { success: true; gacha_id: string; story: StoryPlay };
 
@@ -332,7 +337,7 @@ function getParticlePreset(variant: TelopVariant): ParticlePreset {
   }
 }
 
-export function GachaV4Player({ playLabel = "ガチャを回す", playClassName }: Props) {
+export function GachaV4Player({ playLabel = "ガチャを回す", playClassName, playVariant = "default" }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [story, setStory] = useState<StoryPlay | null>(null);
@@ -577,6 +582,12 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     }
   }, [status]);
 
+  const isRoundButton = playVariant === "round";
+  const buttonLabel = status === "playing" ? "再生中" : playLabel;
+  const buttonClassName = isRoundButton
+    ? playClassName ?? DEFAULT_ROUND_PLAY_CLASS
+    : playClassName ?? DEFAULT_PLAY_CLASS;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -584,9 +595,27 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
           type="button"
           onClick={start}
           disabled={status === "loading" || status === "playing"}
-          className={playClassName ?? DEFAULT_PLAY_CLASS}
+          className={buttonClassName}
         >
-          {status === "playing" ? "再生中" : playLabel}
+          {isRoundButton ? (
+            <>
+              <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+                <span className="relative z-10 text-[0.7rem] font-bold leading-tight tracking-[0.12em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                  {buttonLabel}
+                </span>
+                {status !== "playing" && (
+                  <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">
+                    START
+                  </span>
+                )}
+              </div>
+              <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
+            </>
+          ) : (
+            buttonLabel
+          )}
         </button>
       </div>
 
