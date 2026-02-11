@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ResultDisplay } from "@/lib/gacha/v3/types";
 import type { StoryPlay, StorySequenceItem } from "@/lib/gacha/v4/types";
@@ -65,6 +66,48 @@ function pickCountdown(star: number) {
     if (star >= v.starMin) return v;
   }
   return ordered[ordered.length - 1];
+}
+
+function getTelopTheme(color: ResultDisplay["color"]) {
+  switch (color) {
+    case "green":
+      return {
+        textClass: "text-emerald-200",
+        glowClass: "text-emerald-300/70",
+        stroke: "rgba(13, 148, 136, 0.6)",
+      };
+    case "red":
+      return {
+        textClass: "text-red-300",
+        glowClass: "text-red-400/70",
+        stroke: "rgba(239, 68, 68, 0.65)",
+      };
+    case "rainbow":
+      return {
+        textClass: "bg-gradient-to-r from-red-300 via-yellow-200 to-blue-300 bg-clip-text text-transparent",
+        glowClass: "bg-gradient-to-r from-red-400 via-yellow-300 to-blue-400 bg-clip-text text-transparent opacity-80",
+        stroke: "rgba(255, 255, 255, 0.4)",
+      };
+    case "gold":
+      return {
+        textClass: "bg-gradient-to-b from-amber-100 via-amber-300 to-amber-500 bg-clip-text text-transparent",
+        glowClass: "bg-gradient-to-b from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent opacity-80",
+        stroke: "rgba(251, 191, 36, 0.55)",
+      };
+    case "gray":
+      return {
+        textClass: "text-gray-200",
+        glowClass: "text-gray-300/70",
+        stroke: "rgba(148, 163, 184, 0.55)",
+      };
+    case "none":
+    default:
+      return {
+        textClass: "text-white",
+        glowClass: "text-white/70",
+        stroke: "rgba(255, 255, 255, 0.4)",
+      };
+  }
 }
 
 export function GachaV4Player({ playLabel = "ガチャを回す", playClassName }: Props) {
@@ -352,32 +395,34 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
           {telop && telop.type !== "none" && (
             <div className="pointer-events-none absolute inset-0 z-[120] flex items-center justify-center bg-black/60">
-              <div
-                className="px-6 py-4 text-center"
-                style={{
-                  animation: "telop-emerge 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-                  transform: "scale(0.3)",
-                  opacity: 0,
-                }}
-              >
-                <span
-                  className={`font-serif text-5xl font-extrabold tracking-[0.1em] drop-shadow-[0_6px_18px_rgba(0,0,0,0.8)] ${
-                    telop.color === "green"
-                      ? "text-emerald-300"
-                      : telop.color === "red"
-                        ? "text-red-400"
-                        : telop.color === "rainbow"
-                          ? "bg-gradient-to-r from-red-400 via-yellow-300 to-blue-400 bg-clip-text text-transparent"
-                          : telop.color === "gold"
-                            ? "bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent"
-                            : telop.color === "gray"
-                              ? "text-gray-300"
-                              : "text-white"
-                  }`}
-                >
-                  {telop.text}
-                </span>
-              </div>
+              {(() => {
+                const theme = getTelopTheme(telop.color);
+                return (
+                  <div
+                    className="px-6 py-4 text-center"
+                    style={{
+                      animation: "telop-emerge 0.95s cubic-bezier(0.16, 1.2, 0.36, 1) forwards",
+                      transform: "scale(0.05)",
+                      opacity: 0,
+                    }}
+                  >
+                    <div className="relative">
+                      <span
+                        aria-hidden
+                        className={`absolute inset-0 translate-y-1 text-6xl font-black tracking-[0.2em] blur-2xl ${theme.glowClass}`}
+                      >
+                        {telop.text}
+                      </span>
+                      <span
+                        className={`relative font-display text-6xl font-black tracking-[0.2em] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)] sm:text-7xl md:text-8xl ${theme.textClass}`}
+                        style={{ WebkitTextStroke: `2px ${theme.stroke}` }}
+                      >
+                        {telop.text}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -441,10 +486,10 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
       <style jsx global>{`
         @keyframes telop-emerge {
-          0% { transform: scale(0.3) translateZ(-400px) rotateX(25deg); opacity: 0; }
-          50% { opacity: 1; }
-          70% { transform: scale(1.05) translateZ(50px) rotateX(-5deg); }
-          100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; }
+          0% { transform: scale(0.05) translateZ(-1200px) rotateX(35deg); opacity: 0; filter: blur(18px); }
+          35% { opacity: 1; filter: blur(6px); }
+          70% { transform: scale(1.18) translateZ(140px) rotateX(-6deg); filter: blur(0); }
+          100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; filter: blur(0); }
         }
       `}</style>
     </div>
@@ -497,32 +542,40 @@ function CardReveal({ story, cards, loading, onClose }: CardRevealProps) {
             {list.map((card) => (
               <div key={card.id} className="relative overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-b from-white/10 to-black/40 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(236,72,153,0.2),transparent_40%)]" />
-                <Image
-                  src={card.image_url}
-                  alt={card.name}
-                  width={640}
-                  height={960}
-                  className="relative z-10 w-full object-contain"
-                  priority
-                />
-                <div className="absolute bottom-3 left-0 right-0 z-10 px-4 text-center">
-                  <p className="font-display text-xl text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">{card.name}</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/80">
-                    {card.serial_number ? `No. ${card.serial_number}` : "SERIAL"}
-                  </p>
+                <div className="relative z-10 flex flex-col items-center gap-1 px-4 pb-2 pt-4 text-center">
+                  <p className="text-[11px] uppercase tracking-[0.4em] text-amber-200/80">★{card.star}</p>
+                  <p className="font-display text-lg text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">{card.name}</p>
+                </div>
+                <div className="relative z-10 px-4 pb-4">
+                  <Image
+                    src={card.image_url}
+                    alt={card.name}
+                    width={640}
+                    height={960}
+                    className="w-full object-contain"
+                    priority
+                  />
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full max-w-xs rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon"
-        >
-          もう一度
-        </button>
+        <div className="flex w-full max-w-xs flex-col gap-3">
+          <Link
+            href="/collection"
+            className="rounded-full border border-white/20 bg-white/10 px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg transition hover:bg-white/20"
+          >
+            コレクションへ戻る
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon"
+          >
+            もう一度
+          </button>
+        </div>
       </div>
     </div>
   );
