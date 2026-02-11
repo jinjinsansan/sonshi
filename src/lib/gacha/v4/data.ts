@@ -102,3 +102,19 @@ export async function loadStoryScenarios(): Promise<StoryScenario[]> {
   }
   return parsed.length ? parsed : FALLBACK_SCENARIOS;
 }
+
+export async function loadDondenRates(): Promise<{ win: number; small_win: number; lose: number }> {
+  const supabase = getSupabaseServiceClient();
+  const { data, error } = await supabase.from("donden_settings").select("type, probability");
+  if (error) {
+    console.error("loadDondenRates error", error);
+    return { win: 0, small_win: 0, lose: 0 };
+  }
+  const rates = { win: 0, small_win: 0, lose: 0 };
+  for (const row of (data ?? []) as { type: string; probability?: number | null }[]) {
+    if (row.type === "win") rates.win = Number(row.probability ?? 0);
+    if (row.type === "small_win") rates.small_win = Number(row.probability ?? 0);
+    if (row.type === "lose") rates.lose = Number(row.probability ?? 0);
+  }
+  return rates;
+}

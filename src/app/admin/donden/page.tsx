@@ -68,7 +68,7 @@ export default async function AdminDondenPage() {
         </div>
         <button
           type="submit"
-          className="rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-2 text-sm font-semibold text-black shadow-neon"
+          className="w-full rounded-xl bg-gradient-to-r from-neon-pink to-neon-yellow px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:brightness-105"
         >
           保存
         </button>
