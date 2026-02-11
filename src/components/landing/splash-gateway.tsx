@@ -1,90 +1,25 @@
 "use client";
 
-import { motion, useAnimation, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-type AnimationPhase = "icon-appear" | "collision" | "icon-fly" | "sonshi-rotate" | "complete";
+type AnimationPhase = "shock" | "logo" | "complete";
 
 export function SplashGateway() {
   const router = useRouter();
-  const [phase, setPhase] = useState<AnimationPhase>("icon-appear");
-  const sonshiSpinControls = useAnimation();
+  const [phase, setPhase] = useState<AnimationPhase>("shock");
 
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase("collision"), 500),
-      setTimeout(() => setPhase("icon-fly"), 1500),
-      setTimeout(() => setPhase("sonshi-rotate"), 1800),
-      setTimeout(() => setPhase("complete"), 3800),
-    ];
+    const timers = [setTimeout(() => setPhase("logo"), 1200), setTimeout(() => setPhase("complete"), 2800)];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  useEffect(() => {
-    if (phase === "sonshi-rotate") {
-      sonshiSpinControls.set({ rotate: 0 });
-      sonshiSpinControls.start({ rotate: 2160, transition: { duration: 1.8, ease: "linear" } });
-    } else {
-      sonshiSpinControls.set({ rotate: 0 });
-    }
-  }, [phase, sonshiSpinControls]);
-
   const heroLines = useMemo(() => ["SONSHI", "GACHA"], []);
 
-  const iconVariants: Variants = {
-    appear: {
-      opacity: 1,
-      scale: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-    fly: {
-      opacity: 0,
-      x: 1200,
-      y: -800,
-      rotate: 720,
-      transition: { duration: 1, ease: "easeIn" },
-    },
-  };
-
-  const sonshiVariants: Variants = {
-    offscreen: {
-      x: -1200,
-      opacity: 0,
-      rotate: 0,
-    },
-    collision: {
-      x: 0,
-      opacity: 1,
-      rotate: 0,
-      transition: { duration: 0.8, ease: [0.6, 0.01, 0.05, 0.95] as const },
-    },
-    rotate: {
-      x: 0,
-      opacity: 1,
-      scale: 1.15,
-    },
-    complete: {
-      scale: 1,
-      transition: { duration: 0.3, ease: "easeOut" },
-    },
-  };
-
-  const getSonshiAnimation = () => {
-    if (phase === "icon-appear") return "offscreen";
-    if (phase === "collision" || phase === "icon-fly") return "collision";
-    if (phase === "sonshi-rotate") return "rotate";
-    return "complete";
-  };
-
-  const getIconAnimation = () => {
-    if (phase === "icon-fly" || phase === "sonshi-rotate" || phase === "complete") return "fly";
-    return "appear";
-  };
+  const showShock = phase === "shock";
+  const showLogo = phase === "logo";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hall-background text-white">
@@ -95,41 +30,51 @@ export function SplashGateway() {
       </div>
       <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-10">
         {phase !== "complete" && (
-          <div className="relative flex h-64 w-64 items-center justify-center">
-            {/* SONSHI Image */}
+          <div className="relative flex h-[62vh] w-full items-center justify-center overflow-hidden rounded-[32px] border border-white/10 bg-black/30 shadow-[0_0_45px_rgba(0,0,0,0.5)]">
             <motion.div
-              className="absolute"
-              initial="offscreen"
-              animate={getSonshiAnimation()}
-              variants={sonshiVariants}
-            >
-              <motion.div animate={sonshiSpinControls} className="origin-center">
-                <Image
-                  src="/sonshi.jpg"
-                  alt="SONSHI"
-                  width={256}
-                  height={256}
-                  priority
-                  className="h-64 w-64 rounded-3xl object-cover shadow-2xl"
-                />
-              </motion.div>
-            </motion.div>
-
-            {/* Icon Image */}
-            <motion.div
-              className="absolute z-10"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={getIconAnimation()}
-              variants={iconVariants}
+              className="absolute inset-0"
+              initial={{ opacity: 0, scale: 2.4 }}
+              animate={showShock ? { opacity: 1, scale: 1.35 } : { opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.9, ease: [0.2, 0.75, 0.2, 1] }}
             >
               <Image
-                src="/icon-large.png"
-                alt="Icon"
-                width={200}
-                height={200}
+                src="/opensonshi.png"
+                alt="SONSHI"
+                fill
                 priority
-                className="h-48 w-48 rounded-2xl object-cover shadow-2xl neon-crest"
+                className="object-cover object-top"
               />
+            </motion.div>
+            <motion.div
+              className="absolute inset-0 mix-blend-screen"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.95), rgba(0,200,255,0.55) 45%, rgba(0,0,0,0.1) 75%)",
+              }}
+              initial={{ opacity: 0 }}
+              animate={
+                showShock
+                  ? { opacity: [0, 0.9, 0.35, 0], transition: { duration: 0.7, times: [0, 0.2, 0.6, 1] } }
+                  : { opacity: 0 }
+              }
+            />
+            <motion.div
+              className="absolute flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={showLogo ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            >
+              <div className="relative">
+                <div className="absolute inset-0 -z-10 rounded-[36px] bg-neon-blue/25 blur-3xl" />
+                <Image
+                  src="/icon-large.png"
+                  alt="SONSHI GACHA"
+                  width={260}
+                  height={260}
+                  priority
+                  className="h-56 w-56 rounded-3xl object-cover shadow-[0_0_35px_rgba(255,255,255,0.35)]"
+                />
+              </div>
             </motion.div>
           </div>
         )}
