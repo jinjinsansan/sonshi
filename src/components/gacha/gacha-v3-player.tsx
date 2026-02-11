@@ -27,6 +27,40 @@ const DEFAULT_PLAY_CLASS =
 
 type GachaPlayResponse = { success: true; gacha_id: string; scenario: Scenario };
 
+const STANDBY_VARIANTS = [
+  { id: "S02", starMin: 10, filename: "S02.mp4" }, // rainbow 強示唆
+  { id: "S05", starMin: 7, filename: "S05.mp4" }, // red 中〜強
+  { id: "S04", starMin: 5, filename: "S04.mp4" }, // blue 中
+  { id: "S01", starMin: 0, filename: "S01.mp4" }, // yellow デフォルト
+  { id: "S03", starMin: 0, filename: "S03.mp4" }, // gray 弱
+  { id: "S06", starMin: 0, filename: "S06.mp4" }, // white neutral
+];
+
+const COUNTDOWN_VARIANTS = [
+  { id: "C04", starMin: 10, filename: "C04.mp4" },
+  { id: "C02", starMin: 7, filename: "C02.mp4" },
+  { id: "C01", starMin: 5, filename: "C01.mp4" },
+  { id: "C03", starMin: 3, filename: "C03.mp4" },
+  { id: "C05", starMin: 0, filename: "C05.mp4" },
+  { id: "C06", starMin: 0, filename: "C06.mp4" },
+];
+
+function pickStandby(star: number) {
+  const ordered = [...STANDBY_VARIANTS].sort((a, b) => b.starMin - a.starMin);
+  for (const v of ordered) {
+    if (star >= v.starMin) return v;
+  }
+  return ordered[ordered.length - 1];
+}
+
+function pickCountdown(star: number) {
+  const ordered = [...COUNTDOWN_VARIANTS].sort((a, b) => b.starMin - a.starMin);
+  for (const v of ordered) {
+    if (star >= v.starMin) return v;
+  }
+  return ordered[ordered.length - 1];
+}
+
 export function GachaV3Player({ playLabel = "ガチャを回す", playClassName }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -59,22 +93,24 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     const raw = (scenario.video_sequence ?? []) as (VideoSequenceItem & { duration_seconds?: number })[];
     const seq: VideoSequenceItem[] = [];
 
-    // 1コマ目: standby
+    // 1コマ目: standby（星に応じて示唆変化）
+    const standby = pickStandby(scenario.star);
     seq.push({
       order: 1,
-      video_id: "S01",
+      video_id: standby.id,
       category: "standby",
-      filename: "S01.mp4",
+      filename: standby.filename,
       hint_level: 0,
       result_display: { type: "none", text: "", color: "none", show_next_button: true },
     });
 
-    // 2コマ目: countdown
+    // 2コマ目: countdown（星に応じて示唆変化）
+    const countdown = pickCountdown(scenario.star);
     seq.push({
       order: 2,
-      video_id: "C01",
+      video_id: countdown.id,
       category: "countdown",
-      filename: "C01.mp4",
+      filename: countdown.filename,
       hint_level: 0,
       result_display: { type: "none", text: "", color: "none", show_next_button: true },
     });
