@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties } from "react";
 import type { ResultDisplay } from "@/lib/gacha/v3/types";
 import type { StoryPlay, StoryResult, StorySequenceItem } from "@/lib/gacha/v4/types";
@@ -348,6 +349,11 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
   const [cards, setCards] = useState<CardData[] | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   useEffect(() => {
     if (status !== "playing") return;
@@ -596,6 +602,74 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
     ? playClassName ?? DEFAULT_ROUND_PLAY_CLASS
     : playClassName ?? DEFAULT_PLAY_CLASS;
 
+  const videoOverlay =
+    status === "playing" && currentVideo ? (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
+        <video
+          key={currentVideo.video_id}
+          ref={videoRef}
+          src={getVideoPathV3(currentVideo.filename)}
+          className="h-full w-full object-contain"
+          playsInline
+          autoPlay
+          controls={false}
+          onPlay={() => {
+            setCanAdvance(true);
+          }}
+          onEnded={handleEnded}
+          onError={handleEnded}
+        />
+
+        {telop && telop.type !== "none" && (
+          <TelopOverlay telop={telop} storyResult={story?.result} sequenceIndex={currentIndex} />
+        )}
+
+        <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
+          <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!canAdvance}
+              className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-50"
+            >
+              <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                  NEXT
+                </span>
+                <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">次へ</span>
+              </div>
+              <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95"
+            >
+              <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                  SKIP
+                </span>
+                <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">スキップ</span>
+              </div>
+              <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+    : null;
+
+  const cardOverlay =
+    status === "card" && story ? (
+      <CardReveal story={story} cards={cards} loading={cardLoading} onClose={resetAll} />
+    )
+    : null;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -628,71 +702,8 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
-
-      {status === "playing" && currentVideo && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
-          <video
-            key={currentVideo.video_id}
-            ref={videoRef}
-            src={getVideoPathV3(currentVideo.filename)}
-            className="h-full w-full object-contain"
-            playsInline
-            autoPlay
-            controls={false}
-            onPlay={() => {
-              setCanAdvance(true);
-            }}
-            onEnded={handleEnded}
-            onError={handleEnded}
-          />
-
-          {telop && telop.type !== "none" && (
-            <TelopOverlay telop={telop} storyResult={story?.result} sequenceIndex={currentIndex} />
-          )}
-
-          {/* Footer buttons (no counter) */}
-          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
-            <div className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={!canAdvance}
-                className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95 disabled:opacity-50"
-              >
-                <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
-                <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
-                    NEXT
-                  </span>
-                  <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">次へ</span>
-                </div>
-                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="pointer-events-auto group relative h-32 w-32 rounded-full transition-transform active:scale-95"
-              >
-                <div className="absolute inset-0 rounded-full border-[5px] border-zinc-500 bg-black shadow-[0_0_18px_rgba(0,0,0,0.6)]" />
-                <div className="absolute inset-3 rounded-full border border-zinc-600 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-500 shadow-[inset_0_3px_6px_rgba(255,255,255,0.85),inset_0_-3px_6px_rgba(0,0,0,0.55),0_6px_12px_rgba(0,0,0,0.6)]" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-zinc-800 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
-                    SKIP
-                  </span>
-                  <span className="relative z-10 mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">スキップ</span>
-                </div>
-                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/50 to-transparent opacity-60 pointer-events-none" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {status === "card" && story && (
-        <CardReveal story={story} cards={cards} loading={cardLoading} onClose={resetAll} />
-      )}
+      {portalTarget && videoOverlay ? createPortal(videoOverlay, portalTarget) : null}
+      {portalTarget && cardOverlay ? createPortal(cardOverlay, portalTarget) : null}
 
       <style jsx global>{`
         @keyframes telop-emerge {
