@@ -21,7 +21,7 @@ const GACHA_CARDS = [
     ticketNote: "ガチャは１チケット消費します",
     icon: "/ito.png",
     badge: "text-neon-blue",
-    gradient: "from-[#0b0f1f] via-[#111a2c] to-[#06070f]",
+    accent: "from-[#3bd9ff]/35 via-transparent to-transparent",
   },
   {
     id: "kanda",
@@ -31,7 +31,8 @@ const GACHA_CARDS = [
     ticketNote: "ガチャは１チケットを消費します",
     icon: null,
     badge: "text-rose-200",
-    gradient: "from-[#1c0b0b] via-[#291010] to-[#070404]",
+    accent: "from-[#ff6b6b]/30 via-transparent to-transparent",
+    ribbon: "準備中",
   },
 ];
 
@@ -87,27 +88,39 @@ export default async function GachaPage() {
         {GACHA_CARDS.map((card) => (
           <article
             key={card.id}
-            className={`rounded-3xl border border-white/12 bg-gradient-to-br ${card.gradient} px-6 py-6 shadow-panel-inset`}
+            className="relative overflow-hidden rounded-3xl border border-white/12 bg-white/5 px-6 py-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl"
           >
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className={`absolute inset-0 bg-gradient-to-br ${card.accent}`} />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_60%)]" />
+            <div className="absolute inset-0 border border-white/10" />
+            {card.ribbon ? (
+              <div className="absolute right-[-70px] top-6 z-20 rotate-45 border border-white/20 bg-white/10 px-16 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-white/80 backdrop-blur-md shadow-[0_10px_25px_rgba(0,0,0,0.35)]">
+                {card.ribbon}
+              </div>
+            ) : null}
+            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   {card.icon ? (
-                    <div className="relative h-10 w-10 overflow-hidden rounded-full border border-white/20 bg-white/10">
-                      <Image src={card.icon} alt={`${card.title} アイコン`} fill sizes="40px" className="object-cover" />
+                    <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/30 bg-white/10 shadow-[0_0_20px_rgba(59,217,255,0.35)]">
+                      <Image src={card.icon} alt={`${card.title} アイコン`} fill sizes="48px" className="object-cover" />
                     </div>
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-[10px] font-semibold text-white/60">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-semibold text-white/70">
                       準備中
                     </div>
                   )}
                   <div>
-                    <p className={`text-xs uppercase tracking-[0.4em] ${card.badge}`}>GACHA</p>
-                    <h3 className="font-display text-2xl text-white">{card.title}</h3>
+                    <p className={`inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] ${card.badge}`}>
+                      GACHA
+                    </p>
+                    <h3 className="mt-2 font-display text-2xl text-white">{card.title}</h3>
                   </div>
                 </div>
-                <p className="text-sm text-white/80">{card.description}</p>
-                <p className="text-xs text-white/70">{card.ticketNote}</p>
+                <p className="text-sm leading-relaxed text-white/85">{card.description}</p>
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.7rem] text-white/75">
+                  {card.ticketNote}
+                </span>
               </div>
               <div className="flex w-full justify-center sm:w-auto sm:justify-end">
                 {card.id === "kanda" ? (
