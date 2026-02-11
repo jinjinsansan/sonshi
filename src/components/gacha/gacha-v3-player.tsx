@@ -1,10 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ResultDisplay, Scenario, VideoSequenceItem } from "@/lib/gacha/v3/types";
+import type { ResultDisplay, ResultType, Scenario, VideoSequenceItem } from "@/lib/gacha/v3/types";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 
-type Status = "idle" | "loading" | "playing" | "result" | "error";
+type Status = "idle" | "loading" | "playing" | "result" | "card" | "error";
+
+type CardData = {
+  id: string;
+  name: string;
+  image_url: string;
+  star: number;
+  serial_number?: number | null;
+};
+
+type ResultKind = "lose" | "win" | "big_win" | "jackpot" | "chase";
 
 type Props = {
   playLabel?: string;
@@ -22,12 +33,29 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [gachaId, setGachaId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [canAdvance, setCanAdvance] = useState(false);
   const [isAuto, setIsAuto] = useState(false);
   const [telop, setTelop] = useState<ResultDisplay | null>(null);
+  const [resultKind, setResultKind] = useState<ResultKind | null>(null);
+  const [cards, setCards] = useState<CardData[] | null>(null);
+  const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isAutoRef = useRef(false);
+  const lastResultRef = useRef<ResultType | null>(null);
+
+  const resetAll = useCallback(() => {
+    setStatus("idle");
+    setScenario(null);
+    setGachaId(null);
+    setCards(null);
+    setCurrentIndex(0);
+    setIsAuto(false);
+    isAutoRef.current = false;
+    setResultKind(null);
+    lastResultRef.current = null;
+  }, []);
 
   const currentVideo: VideoSequenceItem | null = useMemo(() => {
     if (!scenario) return null;
@@ -38,16 +66,20 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     setStatus("loading");
     setError(null);
     setScenario(null);
+    setGachaId(null);
     setCurrentIndex(0);
     setCanAdvance(false);
     setIsAuto(false);
     isAutoRef.current = false;
+    setResultKind(null);
+    lastResultRef.current = null;
     try {
       const res = await fetch("/api/gacha/v3/play", { method: "POST" });
       const data = (await res.json()) as GachaPlayResponse | { error?: string };
       if (!res.ok || "error" in data) throw new Error((data as { error?: string }).error ?? "start failed");
 
       const v3 = (data as GachaPlayResponse).scenario;
+      setGachaId((data as GachaPlayResponse).gacha_id);
       setScenario(v3);
       setStatus("playing");
       setCurrentIndex(0);
@@ -72,6 +104,7 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
       }
       return;
     }
+    setResultKind(resolveResultKind(scenario, lastResultRef.current));
     setStatus("result");
   }, [currentIndex, scenario]);
 
@@ -83,6 +116,7 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
   const handleEnded = useCallback(() => {
     if (!scenario || !currentVideo) return;
     const rd = currentVideo.result_display;
+    lastResultRef.current = rd?.type ?? null;
     setTelop(rd);
 
     const afterTelop = () => {
@@ -93,6 +127,7 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
           setCanAdvance(true);
         }
       } else {
+        setResultKind(resolveResultKind(scenario, lastResultRef.current));
         setStatus("result");
       }
     };
@@ -111,9 +146,29 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
   const handleSkip = useCallback(() => {
     if (!scenario) return;
     setTelop(null);
+    setResultKind(resolveResultKind(scenario, lastResultRef.current));
     setStatus("result");
     setCanAdvance(false);
   }, [scenario]);
+
+  const fetchCards = useCallback(async (id: string | null, star: number) => {
+    setCardLoading(true);
+    try {
+      const res = await fetch("/api/gacha/v3/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gacha_id: id }),
+      });
+      const data = (await res.json()) as { cards?: CardData[] };
+      const payload = (data.cards ?? []).map((c) => ({ ...c, star: c.star ?? star }));
+      setCards(payload.length ? payload : null);
+    } catch (err) {
+      console.error("fetch cards failed", err);
+      setCards(null);
+    } finally {
+      setCardLoading(false);
+    }
+  }, []);
 
   // isAuto反映
   useEffect(() => {
@@ -125,20 +180,16 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
     if (status !== "playing") return;
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setStatus("idle");
-        setScenario(null);
-        setCurrentIndex(0);
-        setIsAuto(false);
-        isAutoRef.current = false;
+        resetAll();
       }
     };
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
-  }, [status]);
+  }, [resetAll, status]);
 
   // 全画面オーバーレイ中はスクロール抑制＆nav非表示（V2同様）
   useEffect(() => {
-    if (status === "playing") {
+    if (status === "playing" || status === "result" || status === "card") {
       document.body.style.overflow = "hidden";
       const tabBar = document.querySelector("nav") as HTMLElement | null;
       if (tabBar) tabBar.style.display = "none";
@@ -149,8 +200,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
       isAutoRef.current = false;
     }
   }, [status]);
-
-  const total = scenario?.video_sequence.length ?? 0;
 
   return (
     <div className="space-y-4">
@@ -226,11 +275,9 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
                 <div className="absolute inset-2 rounded-full bg-gradient-to-b from-red-400 to-red-600 shadow-[inset_0_2px_12px_rgba(255,255,255,0.4),inset_0_-2px_8px_rgba(0,0,0,0.3)]" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="relative z-10 font-display text-2xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                    {currentIndex === total - 1 ? "結果" : "NEXT"}
+                    NEXT
                   </span>
-                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
-                    {currentIndex === total - 1 ? "Result" : "次へ"}
-                  </span>
+                  <span className="relative z-10 mt-1 text-[10px] uppercase tracking-[0.3em] text-white/80">次へ</span>
                 </div>
               </button>
 
@@ -278,10 +325,6 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
             </div>
           </div>
 
-          <div className="absolute left-4 top-4 rounded-full bg-black/70 px-4 py-2 text-sm uppercase tracking-[0.3em] text-white/90 shadow-lg">
-            {currentIndex + 1} / {total}
-          </div>
-
           <button
             type="button"
             onClick={() => {
@@ -290,6 +333,8 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
               setCurrentIndex(0);
               setIsAuto(false);
               isAutoRef.current = false;
+              setResultKind(null);
+              lastResultRef.current = null;
             }}
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-lg transition hover:bg-black/90 hover:text-white"
             title="閉じる (ESC)"
@@ -301,19 +346,23 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
         </div>
       )}
 
-      {status === "result" && scenario && (
-        <div className="rounded-2xl border border-white/10 bg-black/40 p-4 space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-neon-yellow">Result</p>
-          <p className="text-lg font-display text-white">★{scenario.star}</p>
-          <p className="text-sm text-white/80">カード {scenario.card_count} 枚</p>
-          <button
-            type="button"
-            onClick={() => setStatus("idle")}
-            className="mt-2 rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white"
-          >
-            もう一度
-          </button>
-        </div>
+      {status === "result" && scenario && resultKind && (
+        <FinalResultTelop
+          kind={resultKind}
+          onClose={async () => {
+            await fetchCards(gachaId, scenario.star);
+            setStatus("card");
+          }}
+        />
+      )}
+
+      {status === "card" && scenario && (
+        <CardReveal
+          scenario={scenario}
+          cards={cards}
+          loading={cardLoading}
+          onClose={resetAll}
+        />
       )}
 
       <style jsx global>{`
@@ -323,7 +372,212 @@ export function GachaV3Player({ playLabel = "ガチャを回す", playClassName 
           70% { transform: scale(1.05) translateZ(50px) rotateX(-5deg); }
           100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; }
         }
+        @keyframes rise {
+          0% { transform: translateY(20px) scale(0.8); opacity: 0; }
+          30% { opacity: 1; }
+          70% { opacity: 0.9; }
+          100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
+        }
       `}</style>
+    </div>
+  );
+}
+
+function resolveResultKind(scenario: Scenario, lastResult: ResultType | null): ResultKind {
+  if (lastResult === "tsuigeki_chance") return "chase";
+  if (lastResult === "tsuigeki_success") return "jackpot";
+  if (lastResult === "tsuigeki_fail") return "lose";
+
+  if (scenario.has_tsuigeki) {
+    if (scenario.tsuigeki_result === "success") return "jackpot";
+    if (scenario.tsuigeki_result === "fail") return "lose";
+  }
+
+  if (scenario.star >= 10) return scenario.result === "win" ? "jackpot" : "lose";
+  if (scenario.star >= 8) return scenario.result === "win" ? "big_win" : "lose";
+  if (scenario.star >= 4) return scenario.result === "win" ? "win" : "lose";
+  return "lose";
+}
+
+type FinalTelopProps = {
+  kind: ResultKind;
+  onClose: () => void;
+};
+
+function FinalResultTelop({ kind, onClose }: FinalTelopProps) {
+  const config = useMemo(() => {
+    switch (kind) {
+      case "lose":
+        return {
+          bg: "from-gray-950 via-gray-900 to-black",
+          main: "ハズレ",
+          sub: "残念...",
+          mainClass: "text-red-400",
+          duration: 3000,
+        } as const;
+      case "win":
+        return {
+          bg: "from-indigo-900 via-purple-800 to-blue-900",
+          main: "当たり！",
+          sub: "おめでとう！",
+          mainClass: "text-amber-200",
+          duration: 4000,
+        } as const;
+      case "big_win":
+        return {
+          bg: "from-amber-500 via-orange-500 to-amber-700",
+          main: "大当たり！！",
+          sub: "凄いっす！！",
+          mainClass: "text-amber-100",
+          duration: 5000,
+        } as const;
+      case "jackpot":
+        return {
+          bg: "from-pink-500 via-purple-500 to-emerald-400",
+          main: "超大当たり！！！",
+          sub: "伝説降臨！！！",
+          mainClass: "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200 bg-clip-text text-transparent",
+          duration: 6000,
+        } as const;
+      case "chase":
+      default:
+        return {
+          bg: "from-purple-800 via-amber-600 to-yellow-500",
+          main: "追撃チャンス！",
+          sub: "まだ終わらない...",
+          mainClass: "text-amber-200",
+          duration: 3000,
+        } as const;
+    }
+  }, [kind]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onClose();
+    }, config.duration);
+    return () => clearTimeout(t);
+  }, [config.duration, onClose]);
+
+  return (
+    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-gradient-to-br ${config.bg} animate-[pulse_2s_ease-in-out_infinite]`}>
+      <div className="text-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]">
+        <div className={`text-6xl font-black tracking-[0.08em] sm:text-7xl md:text-8xl ${config.mainClass}`}>
+          {config.main}
+        </div>
+        <div className="mt-4 text-xl font-semibold text-white/90">{config.sub}</div>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute bottom-10 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-xs uppercase tracking-[0.3em] text-white shadow-lg"
+      >
+        もう一度
+      </button>
+      <ParticleField kind={kind} />
+    </div>
+  );
+}
+
+function ParticleField({ kind }: { kind: ResultKind }) {
+  const colors = useMemo(() => {
+    if (kind === "lose") return ["#7f1d1d", "#111827", "#1f2937"];
+    if (kind === "win") return ["#c084fc", "#60a5fa", "#eab308"];
+    if (kind === "big_win") return ["#fbbf24", "#f59e0b", "#f97316"];
+    if (kind === "jackpot") return ["#f472b6", "#c084fc", "#34d399", "#facc15"];
+    return ["#facc15", "#a855f7", "#fbbf24"]; // chase
+  }, [kind]);
+
+  const particles = useMemo(() => {
+    const pseudo = (seed: number) => (Math.sin(seed * 999) + 1) / 2;
+    return Array.from({ length: 40 }, (_, i) => {
+      const delay = (i % 10) * 0.2;
+      const duration = 4 + (i % 5);
+      const size = 6 + (i % 8);
+      const left = pseudo(i + 1) * 100;
+      const top = pseudo(i + 11) * 100;
+      const color = colors[i % colors.length];
+      return { delay, duration, size, left, top, color, key: i };
+    });
+  }, [colors]);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {particles.map((p) => (
+        <span
+          key={p.key}
+          className="absolute rounded-full blur-sm"
+          style={{
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            opacity: 0.9,
+            animation: `rise ${p.duration}s ease-in-out ${p.delay}s infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+type CardRevealProps = {
+  scenario: Scenario;
+  cards: CardData[] | null;
+  loading: boolean;
+  onClose: () => void;
+};
+
+function CardReveal({ scenario, cards, loading, onClose }: CardRevealProps) {
+  const fallback: CardData = {
+    id: "demo-iraira",
+    name: "イライラ尊師",
+    image_url: "/iraira.png",
+    star: scenario.star,
+    serial_number: null,
+  };
+
+  const list = cards && cards.length ? cards : [fallback];
+  const count = scenario.card_count ?? list.length;
+
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-gradient-to-br from-black via-zinc-950 to-black">
+      <div className="relative flex w-full max-w-md flex-col items-center gap-6 rounded-[28px] border border-white/15 bg-[rgba(12,10,20,0.92)] p-6 shadow-[0_35px_80px_rgba(0,0,0,0.75)]">
+        <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Result</p>
+        <p className="text-2xl font-display text-white">★{scenario.star} / {count}枚</p>
+
+        {loading ? (
+          <p className="text-sm text-white/80">カードを取得中...</p>
+        ) : (
+          <div className="w-full space-y-3">
+            {list.map((card) => (
+              <div key={card.id} className="relative overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-b from-white/10 to-black/40 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(236,72,153,0.2),transparent_40%)]" />
+                <Image
+                  src={card.image_url}
+                  alt={card.name}
+                  width={640}
+                  height={960}
+                  className="relative z-10 w-full object-contain"
+                  priority
+                />
+                <div className="absolute bottom-3 left-0 right-0 z-10 px-4 text-center">
+                  <p className="font-display text-xl text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">{card.name}</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/80">{card.serial_number ? `No. ${card.serial_number}` : "SERIAL"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full max-w-xs rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon"
+        >
+          もう一度
+        </button>
+      </div>
     </div>
   );
 }
