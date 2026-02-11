@@ -6,6 +6,12 @@ import { requireAdminSession } from "@/lib/admin";
 
 const STARS = [10, 11, 12];
 
+const DEFAULTS: Record<number, { success_rate: number; card_count_on_success: number; third_card_rate: number | null }> = {
+  10: { success_rate: 60, card_count_on_success: 2, third_card_rate: 0 },
+  11: { success_rate: 75, card_count_on_success: 2, third_card_rate: 0 },
+  12: { success_rate: 90, card_count_on_success: 3, third_card_rate: 50 },
+};
+
 async function updateTsuigeki(formData: FormData) {
   "use server";
   await requireAdminSession();
@@ -72,7 +78,7 @@ export default async function AdminTsuigekiPage() {
       <form action={updateTsuigeki} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           {STARS.map((star) => {
-            const row = map.get(star);
+            const row = map.get(star) ?? DEFAULTS[star];
             return (
               <div key={star} className="rounded-2xl border border-white/10 bg-hall-panel/80 p-4 shadow-panel-inset">
                 <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">★{star}</p>

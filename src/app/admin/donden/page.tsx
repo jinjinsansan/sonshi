@@ -4,27 +4,44 @@ import { revalidatePath } from "next/cache";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { requireAdminSession } from "@/lib/admin";
 
-const TYPES: { key: string; label: string }[] = [
-  { key: "win", label: "大当たり" },
-  { key: "small_win", label: "小当たり" },
-  { key: "lose", label: "ハズレ" },
-];
+const STARS = Array.from({ length: 12 }, (_, idx) => idx + 1);
+
+const DEFAULT_RATES: Record<number, number> = {
+  1: 0,
+  2: 0,
+  3: 20,
+  4: 15,
+  5: 15,
+  6: 20,
+  7: 20,
+  8: 20,
+  9: 15,
+  10: 15,
+  11: 10,
+  12: 10,
+};
 
 async function updateDonden(formData: FormData) {
   "use server";
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
-  const table = (svc as any).from("donden_settings");
+  const table = (svc as any).from("donden_rate_settings");
 
-  const entries = TYPES.map((t) => {
-    const probability = Number(formData.get(`probability_${t.key}`) ?? 0);
-    return { type: t.key, probability: Number.isFinite(probability) ? probability : 0 };
+  const rows = STARS.map((star) => {
+    const rateRaw = formData.get(`rate_${star}`);
+    const rate = Number(rateRaw ?? 0);
+    return {
+      star_rating: star,
+      donden_rate: Number.isFinite(rate) ? rate : 0,
+    };
   });
 
   await Promise.all(
-    entries.map((entry) =>
-      table
-        .upsert({ type: entry.type, probability: entry.probability, updated_at: new Date().toISOString() }, { onConflict: "type" })
+    rows.map((row) =>
+      table.upsert(
+        { star_rating: row.star_rating, donden_rate: row.donden_rate, updated_at: new Date().toISOString() },
+        { onConflict: "star_rating" }
+      )
     )
   );
 
@@ -35,36 +52,55 @@ async function updateDonden(formData: FormData) {
 export default async function AdminDondenPage() {
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
-  const table = (svc as any).from("donden_settings");
-  const { data } = await table.select("type, probability");
-  const map = new Map<string, number>(
-    (data ?? []).map((row: { type: string; probability?: number | null }) => [row.type, Number(row.probability ?? 0)])
+  const table = (svc as any).from("donden_rate_settings");
+  const { data } = await table.select("star_rating, donden_rate").order("star_rating", { ascending: true });
+  const rateMap = new Map<number, number>(
+    (data ?? []).map((row: { star_rating: number; donden_rate?: number | null }) => [row.star_rating, Number(row.donden_rate ?? 0)])
   );
+
+  const { data: scenarioRows } = await (svc as any)
+    .from("story_scenarios")
+    .select("star_rating")
+    .eq("is_donden", true);
+  const dondenStars = new Set<number>((scenarioRows ?? []).map((row: { star_rating: number }) => Number(row.star_rating)));
 
   return (
     <section className="space-y-6">
       <div className="space-y-1">
         <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">DONDEN</p>
         <h1 className="font-display text-2xl text-white">どんでん返し設定</h1>
-        <p className="text-sm text-zinc-300">win / small_win / lose の発生割合を設定します（%）。</p>
+        <p className="text-sm text-zinc-300">
+          ガチャ実行時にどんでん返しシナリオが選ばれる確率を★ごとに設定します（%）。0%にすると発生しません。
+        </p>
       </div>
 
       <form action={updateDonden} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {TYPES.map((t) => (
-            <div key={t.key} className="rounded-2xl border border-white/10 bg-hall-panel/80 p-4 shadow-panel-inset">
-              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">{t.label}</p>
-              <label className="mt-2 block text-sm text-white">確率 (%)</label>
-              <input
-                name={`probability_${t.key}`}
-                defaultValue={map.get(t.key) ?? 0}
-                type="number"
-                step="0.01"
-                min="0"
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-            </div>
-          ))}
+          {STARS.map((star) => {
+            const isAvailable = dondenStars.has(star);
+            const defaultRate = isAvailable ? rateMap.get(star) ?? DEFAULT_RATES[star] ?? 0 : 0;
+            return (
+              <div key={star} className="rounded-2xl border border-white/10 bg-hall-panel/80 p-4 shadow-panel-inset">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">★{star}</p>
+                  {!isAvailable && <span className="text-xs text-zinc-500">どんでんシナリオなし</span>}
+                </div>
+                <label className="mt-2 block text-sm text-white">どんでん返し発生率 (%)</label>
+                <input
+                  name={`rate_${star}`}
+                  defaultValue={defaultRate}
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  readOnly={!isAvailable}
+                  className={`mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white ${
+                    isAvailable ? "" : "cursor-not-allowed opacity-60"
+                  }`}
+                />
+              </div>
+            );
+          })}
         </div>
         <button
           type="submit"

@@ -8,6 +8,12 @@ import {
   storyVideoSchema,
 } from "./types";
 
+export type ChaseSetting = {
+  success_rate: number;
+  card_count_on_success: number;
+  third_card_rate: number | null;
+};
+
 const FALLBACK_VIDEOS: StoryVideo[] = [
   { id: "OP01", category: "opening", filename: "op_start.mp4", duration_seconds: 6, description: "今日こそ頑張るぞ！" },
   { id: "OP02", category: "opening", filename: "op_go_buy.mp4", duration_seconds: 6, description: "馬券買いに行きます！" },
@@ -60,6 +66,27 @@ export const FALLBACK_SCENARIOS: StoryScenario[] = [
   { id: "seed-12a", name: "★12 超神", star_rating: 12, result: "jackpot", video_sequence: ["OP03","MS05","TR02","HP04","IT02","SN05","JD05","TS01","TS02"], has_chase: true, chase_result: "success", weight: 120 },
 ];
 
+const FALLBACK_DONDEN_RATES: Record<number, number> = {
+  1: 0,
+  2: 0,
+  3: 20,
+  4: 15,
+  5: 15,
+  6: 20,
+  7: 20,
+  8: 20,
+  9: 15,
+  10: 15,
+  11: 10,
+  12: 10,
+};
+
+const FALLBACK_CHASE_SETTINGS: Record<number, ChaseSetting> = {
+  10: { success_rate: 60, card_count_on_success: 2, third_card_rate: 0 },
+  11: { success_rate: 75, card_count_on_success: 2, third_card_rate: 0 },
+  12: { success_rate: 90, card_count_on_success: 3, third_card_rate: 50 },
+};
+
 export async function loadStoryVideos(): Promise<StoryVideo[]> {
   const supabase = getSupabaseServiceClient();
   const { data, error } = await supabase.from("story_videos").select("id, category, filename, duration_seconds, description");
@@ -103,18 +130,36 @@ export async function loadStoryScenarios(): Promise<StoryScenario[]> {
   return parsed.length ? parsed : FALLBACK_SCENARIOS;
 }
 
-export async function loadDondenRates(): Promise<{ win: number; small_win: number; lose: number }> {
+export async function loadDondenRateSettings(): Promise<Record<number, number>> {
   const supabase = getSupabaseServiceClient();
-  const { data, error } = await supabase.from("donden_settings").select("type, probability");
+  const { data, error } = await supabase.from("donden_rate_settings").select("star_rating, donden_rate");
   if (error) {
-    console.error("loadDondenRates error", error);
-    return { win: 0, small_win: 0, lose: 0 };
+    console.error("loadDondenRateSettings error", error);
+    return { ...FALLBACK_DONDEN_RATES };
   }
-  const rates = { win: 0, small_win: 0, lose: 0 };
-  for (const row of (data ?? []) as { type: string; probability?: number | null }[]) {
-    if (row.type === "win") rates.win = Number(row.probability ?? 0);
-    if (row.type === "small_win") rates.small_win = Number(row.probability ?? 0);
-    if (row.type === "lose") rates.lose = Number(row.probability ?? 0);
+  const rates: Record<number, number> = { ...FALLBACK_DONDEN_RATES };
+  for (const row of (data ?? []) as { star_rating: number; donden_rate?: number | null }[]) {
+    rates[Number(row.star_rating)] = Number(row.donden_rate ?? 0);
   }
   return rates;
+}
+
+export async function loadChaseSettings(): Promise<Record<number, ChaseSetting>> {
+  const supabase = getSupabaseServiceClient();
+  const { data, error } = await supabase
+    .from("tsuigeki_settings")
+    .select("star, success_rate, card_count_on_success, third_card_rate");
+  if (error) {
+    console.error("loadChaseSettings error", error);
+    return { ...FALLBACK_CHASE_SETTINGS };
+  }
+  const settings: Record<number, ChaseSetting> = { ...FALLBACK_CHASE_SETTINGS };
+  for (const row of (data ?? []) as { star: number; success_rate?: number | null; card_count_on_success?: number | null; third_card_rate?: number | null }[]) {
+    settings[Number(row.star)] = {
+      success_rate: Number(row.success_rate ?? 0),
+      card_count_on_success: Number(row.card_count_on_success ?? 1),
+      third_card_rate: row.third_card_rate !== null && row.third_card_rate !== undefined ? Number(row.third_card_rate) : null,
+    };
+  }
+  return settings;
 }

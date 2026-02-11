@@ -47,6 +47,8 @@ export type StoryPlay = {
   video_sequence: StorySequenceItem[];
   has_chase: boolean;
   chase_result?: "success" | "fail";
+  is_donden: boolean;
+  card_count: number;
 };
 
 export const storyVideoSchema = z.object({

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const story = await generateStoryPlay();
     const gachaId = randomUUID();
 
-    const cardCount =
+    const fallbackCount =
       story.result === "lose"
         ? 0
         : story.result === "small_win" || story.result === "win"
@@ -54,13 +54,14 @@ export async function POST(request: NextRequest) {
           : story.result === "big_win"
             ? 2
             : 3; // jackpot
+    const cardCount = Number.isFinite(story.card_count) ? story.card_count : fallbackCount;
 
     const insertPayload = {
       id: gachaId,
       user_id: user.id,
       star: story.star,
       result: story.result,
-      is_donden: false,
+      is_donden: story.is_donden,
       donden_type: null,
       has_tsuigeki: story.has_chase,
       tsuigeki_result: story.chase_result,
