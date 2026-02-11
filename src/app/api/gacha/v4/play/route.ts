@@ -46,6 +46,15 @@ export async function POST(request: NextRequest) {
     const story = await generateStoryPlay();
     const gachaId = randomUUID();
 
+    const cardCount =
+      story.result === "lose"
+        ? 0
+        : story.result === "small_win" || story.result === "win"
+          ? 1
+          : story.result === "big_win"
+            ? 2
+            : 3; // jackpot
+
     const insertPayload = {
       id: gachaId,
       user_id: user.id,
@@ -55,8 +64,8 @@ export async function POST(request: NextRequest) {
       donden_type: null,
       has_tsuigeki: story.has_chase,
       tsuigeki_result: story.chase_result,
-      card_count: story.result === "lose" ? 0 : story.result === "small_win" ? 1 : story.result === "win" ? 1 : story.result === "big_win" ? 2 : 3,
-      cards_count: null,
+      card_count: cardCount,
+      cards_count: cardCount,
       koma_count: story.video_sequence.length,
       video_sequence: story.video_sequence,
       scenario: story,
