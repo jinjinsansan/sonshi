@@ -72,20 +72,26 @@ function pickCountdown(star: number) {
 type TelopVariant = "continue" | "win" | "big_win" | "jackpot" | "lose" | "chase";
 type ParticleMode = "electric" | "burst" | "confetti" | "ash" | "swirl";
 
+const TELOP_IMAGE_BASE = "/telop";
+
+const CONTINUE_TIER_IMAGES = [
+  { minStar: 10, file: "continue-5.png" },
+  { minStar: 8, file: "continue-4.png" },
+  { minStar: 6, file: "continue-3.png" },
+  { minStar: 4, file: "continue-2.png" },
+  { minStar: 1, file: "continue-1.png" },
+];
+
 type TelopConfig = {
   overlayStyle: CSSProperties;
-  textClass: string;
-  glowClass: string;
-  stroke: string;
-  sizeClass: string;
-  shadow: string;
+  imageClass: string;
+  imageShadow: string;
   flash?: {
     color: string;
     animation: string;
   };
   motionAnimation?: string;
-  textAnimation?: string;
-  glowAnimation?: string;
+  imageAnimation?: string;
 };
 
 type ParticlePreset = {
@@ -107,6 +113,30 @@ function resolveTelopVariant(telop: ResultDisplay): TelopVariant {
   return "win";
 }
 
+function getContinueTelopImage(star?: number) {
+  const rating = Number.isFinite(star) ? Math.max(1, Math.min(12, Math.floor(star ?? 1))) : 1;
+  const tier = CONTINUE_TIER_IMAGES.find((entry) => rating >= entry.minStar) ?? CONTINUE_TIER_IMAGES[CONTINUE_TIER_IMAGES.length - 1];
+  return `${TELOP_IMAGE_BASE}/${tier.file}`;
+}
+
+function getTelopImagePath(variant: TelopVariant, star?: number) {
+  switch (variant) {
+    case "continue":
+      return getContinueTelopImage(star);
+    case "win":
+      return `${TELOP_IMAGE_BASE}/win.png`;
+    case "big_win":
+      return `${TELOP_IMAGE_BASE}/big-win.png`;
+    case "jackpot":
+      return `${TELOP_IMAGE_BASE}/jackpot.png`;
+    case "lose":
+      return `${TELOP_IMAGE_BASE}/lose.png`;
+    case "chase":
+    default:
+      return `${TELOP_IMAGE_BASE}/chase.png`;
+  }
+}
+
 function getTelopConfig(variant: TelopVariant): TelopConfig {
   switch (variant) {
     case "continue":
@@ -115,17 +145,13 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.22), transparent 50%), radial-gradient(circle at 80% 40%, rgba(0, 255, 255, 0.18), transparent 55%), rgba(0, 0, 0, 0.45)",
         },
-        textClass: "bg-gradient-to-r from-[#00d4ff] via-[#00ffff] to-[#7ce7ff] bg-clip-text text-transparent",
-        glowClass: "text-cyan-300/80",
-        stroke: "4px rgba(255, 255, 255, 0.95)",
-        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
-        shadow: "0 0 25px rgba(0, 212, 255, 0.7), 0 0 45px rgba(0, 212, 255, 0.55), 0 0 12px rgba(0, 0, 0, 0.9)",
+        imageClass: "w-[70vw] sm:w-[60vw] md:w-[55vw] max-w-[900px]",
+        imageShadow: "drop-shadow(0 0 26px rgba(0, 212, 255, 0.55)) drop-shadow(0 0 50px rgba(0, 212, 255, 0.35))",
         flash: {
           color: "rgba(255, 255, 255, 0.9)",
           animation: "telop-flash 0.16s ease-out",
         },
         motionAnimation: "telop-jitter 0.16s linear 0.65s 6",
-        glowAnimation: "telop-glow 1.2s ease-in-out 0.8s 2",
       };
     case "win":
       return {
@@ -133,18 +159,13 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 215, 0, 0.35) 100%), rgba(0, 0, 0, 0.5)",
         },
-        textClass:
-          "bg-gradient-to-b from-[#ffd700] via-[#ffb700] to-[#ff8c00] bg-clip-text text-transparent",
-        glowClass: "text-amber-300/80",
-        stroke: "5px rgba(220, 38, 38, 0.85)",
-        sizeClass: "text-[20vw] sm:text-[15vw] md:text-[12vw]",
-        shadow: "0 0 35px rgba(255, 215, 0, 0.75), 0 0 60px rgba(255, 140, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.9)",
+        imageClass: "w-[75vw] sm:w-[65vw] md:w-[60vw] max-w-[1000px]",
+        imageShadow: "drop-shadow(0 0 30px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 60px rgba(255, 140, 0, 0.45))",
         flash: {
           color: "rgba(255, 255, 255, 0.95)",
           animation: "telop-flash 0.2s ease-out",
         },
         motionAnimation: "telop-pulse 1.2s ease-in-out 0.9s 2",
-        glowAnimation: "telop-glow 1.4s ease-in-out 0.8s 2",
       };
     case "big_win":
       return {
@@ -152,18 +173,13 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 140, 0, 0.45) 100%), rgba(0, 0, 0, 0.55)",
         },
-        textClass:
-          "bg-gradient-to-b from-[#ffe082] via-[#ffb74d] to-[#ff7043] bg-clip-text text-transparent",
-        glowClass: "text-orange-300/80",
-        stroke: "5px rgba(239, 68, 68, 0.85)",
-        sizeClass: "text-[22vw] sm:text-[16vw] md:text-[13vw]",
-        shadow: "0 0 45px rgba(255, 193, 7, 0.8), 0 0 80px rgba(255, 112, 67, 0.6), 0 0 18px rgba(0, 0, 0, 0.9)",
+        imageClass: "w-[80vw] sm:w-[70vw] md:w-[65vw] max-w-[1100px]",
+        imageShadow: "drop-shadow(0 0 36px rgba(255, 193, 7, 0.65)) drop-shadow(0 0 70px rgba(255, 112, 67, 0.5))",
         flash: {
           color: "rgba(255, 255, 255, 0.98)",
           animation: "telop-flash 0.22s ease-out",
         },
         motionAnimation: "telop-shake 0.22s ease-in-out 0.6s 5",
-        glowAnimation: "telop-glow 1.5s ease-in-out 0.8s 2",
       };
     case "jackpot":
       return {
@@ -171,18 +187,13 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.35), transparent 50%), radial-gradient(circle at 70% 40%, rgba(0, 255, 255, 0.25), transparent 55%), linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(255, 215, 0, 0.4) 100%), rgba(0, 0, 0, 0.55)",
         },
-        textClass:
-          "bg-[conic-gradient(from_90deg,#ff4d4d,#ffd93d,#6cffb7,#44a3ff,#c77dff,#ff4d4d)] bg-clip-text text-transparent",
-        glowClass: "text-white/80",
-        stroke: "5px rgba(255, 255, 255, 0.85)",
-        sizeClass: "text-[24vw] sm:text-[17vw] md:text-[14vw]",
-        shadow: "0 0 55px rgba(255, 255, 255, 0.75), 0 0 90px rgba(255, 215, 0, 0.65), 0 0 20px rgba(0, 0, 0, 0.9)",
+        imageClass: "w-[85vw] sm:w-[75vw] md:w-[70vw] max-w-[1200px]",
+        imageShadow: "drop-shadow(0 0 42px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 90px rgba(255, 215, 0, 0.6))",
         flash: {
           color: "rgba(255, 255, 255, 0.98)",
           animation: "telop-flash 0.24s ease-out",
         },
         motionAnimation: "telop-shake 0.26s ease-in-out 0.55s 6",
-        glowAnimation: "telop-glow 1.6s ease-in-out 0.8s 3",
       };
     case "lose":
       return {
@@ -190,18 +201,14 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(36, 0, 0, 0.8) 70%), rgba(0, 0, 0, 0.6)",
         },
-        textClass: "bg-gradient-to-b from-[#c7c7c7] via-[#9b1c1c] to-[#4b0b0b] bg-clip-text text-transparent",
-        glowClass: "text-red-900/70",
-        stroke: "4px rgba(0, 0, 0, 0.85)",
-        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
-        shadow: "0 0 25px rgba(0, 0, 0, 0.9), 0 0 18px rgba(128, 0, 0, 0.7)",
+        imageClass: "w-[70vw] sm:w-[60vw] md:w-[55vw] max-w-[900px]",
+        imageShadow: "drop-shadow(0 0 28px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 22px rgba(128, 0, 0, 0.55))",
         flash: {
           color: "rgba(90, 0, 0, 0.85)",
           animation: "telop-flash 0.12s ease-out",
         },
         motionAnimation: "telop-shake 0.18s ease-in-out 0.45s 6",
-        textAnimation: "telop-fade 1.1s ease-out 0.9s 1",
-        glowAnimation: "telop-glow 1.2s ease-in-out 0.9s 1",
+        imageAnimation: "telop-fade 1.1s ease-out 0.9s 1",
       };
     case "chase":
     default:
@@ -210,17 +217,13 @@ function getTelopConfig(variant: TelopVariant): TelopConfig {
           background:
             "radial-gradient(circle at 30% 30%, rgba(155, 48, 255, 0.35), transparent 55%), radial-gradient(circle at 70% 60%, rgba(255, 215, 0, 0.25), transparent 60%), rgba(0, 0, 0, 0.5)",
         },
-        textClass: "bg-gradient-to-r from-[#9b30ff] via-[#c77dff] to-[#ffd700] bg-clip-text text-transparent",
-        glowClass: "text-purple-300/80",
-        stroke: "4px rgba(255, 255, 255, 0.8)",
-        sizeClass: "text-[18vw] sm:text-[14vw] md:text-[11vw]",
-        shadow: "0 0 35px rgba(155, 48, 255, 0.7), 0 0 55px rgba(255, 215, 0, 0.6), 0 0 12px rgba(0, 0, 0, 0.9)",
+        imageClass: "w-[75vw] sm:w-[65vw] md:w-[60vw] max-w-[1000px]",
+        imageShadow: "drop-shadow(0 0 32px rgba(155, 48, 255, 0.6)) drop-shadow(0 0 58px rgba(255, 215, 0, 0.45))",
         flash: {
           color: "rgba(255, 255, 255, 0.9)",
           animation: "telop-flash 0.16s ease-out",
         },
         motionAnimation: "telop-pulse 0.9s ease-in-out 0.6s 2",
-        glowAnimation: "telop-glow 1.2s ease-in-out 0.7s 2",
       };
   }
 }
@@ -567,7 +570,7 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
             onError={handleEnded}
           />
 
-          {telop && telop.type !== "none" && <TelopOverlay telop={telop} />}
+          {telop && telop.type !== "none" && <TelopOverlay telop={telop} star={story?.star} />}
 
           {/* Footer buttons (no counter) */}
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
@@ -665,21 +668,19 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
 
 type TelopOverlayProps = {
   telop: ResultDisplay;
+  star?: number;
 };
 
-function TelopOverlay({ telop }: TelopOverlayProps) {
+function TelopOverlay({ telop, star }: TelopOverlayProps) {
   const variant = useMemo(() => resolveTelopVariant(telop), [telop]);
   const config = useMemo(() => getTelopConfig(variant), [variant]);
+  const imagePath = useMemo(() => getTelopImagePath(variant, star), [star, variant]);
   const motionStyle: CSSProperties | undefined = config.motionAnimation
     ? { animation: config.motionAnimation }
     : undefined;
-  const glowStyle: CSSProperties | undefined = config.glowAnimation
-    ? { animation: config.glowAnimation }
-    : undefined;
-  const textStyle: CSSProperties = {
-    WebkitTextStroke: config.stroke,
-    textShadow: config.shadow,
-    animation: config.textAnimation,
+  const imageStyle: CSSProperties = {
+    filter: config.imageShadow,
+    animation: config.imageAnimation,
   };
 
   return (
@@ -699,20 +700,17 @@ function TelopOverlay({ telop }: TelopOverlayProps) {
           opacity: 0,
         }}
       >
-        <div className="relative" style={motionStyle}>
-          <span
-            aria-hidden
-            className={`absolute inset-0 translate-y-1 font-body font-black tracking-[0.2em] blur-2xl mix-blend-screen ${config.sizeClass} ${config.glowClass}`}
-            style={glowStyle}
-          >
-            {telop.text}
-          </span>
-          <span
-            className={`relative font-body font-black tracking-[0.2em] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)] ${config.sizeClass} ${config.textClass}`}
-            style={textStyle}
-          >
-            {telop.text}
-          </span>
+        <div className="relative flex items-center justify-center" style={motionStyle}>
+          <div className={`relative aspect-[2/1] ${config.imageClass}`}>
+            <Image
+              src={imagePath}
+              alt={telop.text || "telop"}
+              fill
+              sizes="(max-width: 640px) 80vw, (max-width: 1024px) 70vw, 60vw"
+              className="object-contain"
+              style={imageStyle}
+            />
+          </div>
         </div>
       </div>
     </div>
