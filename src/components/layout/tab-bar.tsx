@@ -30,7 +30,7 @@ export function TabBar({ items }: TabBarProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-4 sm:bottom-6 md:bottom-8 z-50 px-4">
+    <nav className="fixed inset-x-0 z-50 px-4 pb-[env(safe-area-inset-bottom)] bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))] md:bottom-[calc(2rem+env(safe-area-inset-bottom))]">
       <div className="neon-tabbar mx-auto flex w-full max-w-[420px] items-center gap-3 rounded-full px-4 py-2 text-sm">
         {items.map((item) => {
           const Icon = iconMap[item.icon];

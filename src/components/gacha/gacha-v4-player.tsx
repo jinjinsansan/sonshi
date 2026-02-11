@@ -582,6 +582,14 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName,
     }
   }, [status]);
 
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = "";
+      const tabBar = document.querySelector("nav") as HTMLElement | null;
+      if (tabBar) tabBar.style.display = "";
+    };
+  }, []);
+
   const isRoundButton = playVariant === "round";
   const buttonLabel = status === "playing" ? "再生中" : playLabel;
   const buttonClassName = isRoundButton
