@@ -7,7 +7,6 @@ import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 import { StorySequenceBuilder } from "@/components/admin/story-sequence-builder";
 
 const RESULTS = ["lose", "small_win", "win", "big_win", "jackpot"] as const;
-const DONDEN_TYPES = ["lose_to_win", "win_to_lose"] as const;
 
 async function createScenario(formData: FormData) {
   "use server";
@@ -86,15 +85,13 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
   await requireAdminSession();
   const svc = getSupabaseServiceClient();
   const table = (svc as any).from("story_scenarios");
-  const dondenTable = (svc as any).from("donden_settings");
   const videoTable = (svc as any).from("story_videos");
 
-  const [{ data: scenarioRows }, { data: dondenRows }, { data: videoRows }] = await Promise.all([
+  const [{ data: scenarioRows }, { data: videoRows }] = await Promise.all([
     table
       .select("id, name, star_rating, result, video_sequence, has_chase, chase_result, is_donden, weight, is_active, updated_at")
       .order("star_rating", { ascending: true })
       .order("updated_at", { ascending: false }),
-    dondenTable.select("type, probability"),
     videoTable.select("id, category, filename, description").order("id", { ascending: true }),
   ]);
 
@@ -117,10 +114,6 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
     acc[key].push(s);
     return acc;
   }, {});
-
-  const dondenMap = new Map<string, number>(
-    (dondenRows ?? []).map((row: { type: string; probability?: number | null }) => [row.type, Number(row.probability ?? 0)])
-  );
 
   const storyVideos = (videoRows ?? []) as {
     id: string;
@@ -183,46 +176,6 @@ export default async function AdminStoryPage({ searchParams }: { searchParams?: 
         </form>
 
         <div className="space-y-3 text-sm text-white">
-          <div className="glass-panel space-y-3 p-4">
-            <p className="text-sm font-semibold text-white">どんでん率</p>
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                await requireAdminSession();
-                const svcInner = getSupabaseServiceClient();
-                const tableInner = (svcInner as any).from("donden_settings");
-                const updates = DONDEN_TYPES.map((t) => {
-                  const p = Number(formData.get(`donden_${t}`) ?? 0);
-                  return { type: t, probability: Number.isFinite(p) ? p : 0 };
-                });
-                for (const row of updates) {
-                  await tableInner.upsert(
-                    { type: row.type, probability: row.probability, updated_at: new Date().toISOString() },
-                    { onConflict: "type" }
-                  );
-                }
-                revalidatePath("/admin/story");
-                redirect("/admin/story");
-              }}
-              className="space-y-2"
-            >
-              {DONDEN_TYPES.map((t) => (
-                <label key={t} className="flex items-center gap-2 text-xs text-white">
-                  {t}
-                  <input
-                    name={`donden_${t}`}
-                    type="number"
-                    step="0.01"
-                    defaultValue={dondenMap.get(t) ?? 0}
-                    className="w-24 rounded-lg border border-white/15 bg-black/30 px-2 py-1 text-sm text-white"
-                  />
-                  %
-                </label>
-              ))}
-              <button type="submit" className="rounded-full border border-white/20 px-3 py-1 text-xs text-white">保存</button>
-            </form>
-          </div>
-
           {Object.keys(grouped)
             .sort((a, b) => Number(a) - Number(b))
             .map((starKey) => {
