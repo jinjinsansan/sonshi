@@ -65,15 +65,17 @@ export function SplashGateway() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <div className="relative">
-                <div className="absolute inset-0 -z-10 rounded-[36px] bg-neon-blue/25 blur-3xl" />
-                <Image
-                  src="/icon-large.png"
-                  alt="SONSHI GACHA"
-                  width={260}
-                  height={260}
-                  priority
-                  className="h-56 w-56 rounded-3xl object-cover shadow-[0_0_35px_rgba(255,255,255,0.35)]"
-                />
+                <div className="absolute inset-0 -z-10 rounded-[36px] bg-neon-pink/30 blur-3xl" />
+                <div className="neon-crest">
+                  <Image
+                    src="/icon-large.png"
+                    alt="SONSHI GACHA"
+                    width={260}
+                    height={260}
+                    priority
+                    className="h-56 w-56 rounded-[22px] object-cover shadow-[0_0_45px_rgba(255,255,255,0.4)]"
+                  />
+                </div>
               </div>
             </motion.div>
           </div>
