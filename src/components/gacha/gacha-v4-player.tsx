@@ -1,10 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ResultDisplay } from "@/lib/gacha/v3/types";
 import type { StoryPlay, StorySequenceItem } from "@/lib/gacha/v4/types";
 import { getVideoPathV3 } from "@/lib/gacha/v3/utils";
 
-type Status = "idle" | "loading" | "playing" | "result" | "error";
+type Status = "idle" | "loading" | "playing" | "card" | "error";
+
+type CardData = {
+  id: string;
+  name: string;
+  image_url: string;
+  star: number;
+  serial_number?: number | null;
+};
 
 type Props = {
   playLabel?: string;
@@ -18,37 +28,176 @@ const DEFAULT_PLAY_CLASS =
 
 type GachaPlayResponse = { success: true; gacha_id: string; story: StoryPlay };
 
+type StorySequenceWithDisplay = Omit<StorySequenceItem, "category"> & {
+  category: StorySequenceItem["category"] | "standby" | "countdown";
+  result_display: ResultDisplay;
+};
+
+const STANDBY_VARIANTS = [
+  { id: "S02", starMin: 10, filename: "S02.mp4" },
+  { id: "S05", starMin: 7, filename: "S05.mp4" },
+  { id: "S04", starMin: 5, filename: "S04.mp4" },
+  { id: "S01", starMin: 0, filename: "S01.mp4" },
+  { id: "S03", starMin: 0, filename: "S03.mp4" },
+  { id: "S06", starMin: 0, filename: "S06.mp4" },
+];
+
+const COUNTDOWN_VARIANTS = [
+  { id: "C04", starMin: 10, filename: "C04.mp4" },
+  { id: "C02", starMin: 7, filename: "C02.mp4" },
+  { id: "C01", starMin: 5, filename: "C01.mp4" },
+  { id: "C03", starMin: 3, filename: "C03.mp4" },
+  { id: "C05", starMin: 0, filename: "C05.mp4" },
+  { id: "C06", starMin: 0, filename: "C06.mp4" },
+];
+
+function pickStandby(star: number) {
+  const ordered = [...STANDBY_VARIANTS].sort((a, b) => b.starMin - a.starMin);
+  for (const v of ordered) {
+    if (star >= v.starMin) return v;
+  }
+  return ordered[ordered.length - 1];
+}
+
+function pickCountdown(star: number) {
+  const ordered = [...COUNTDOWN_VARIANTS].sort((a, b) => b.starMin - a.starMin);
+  for (const v of ordered) {
+    if (star >= v.starMin) return v;
+  }
+  return ordered[ordered.length - 1];
+}
+
 export function GachaV4Player({ playLabel = "ガチャを回す", playClassName }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [story, setStory] = useState<StoryPlay | null>(null);
+  const [gachaId, setGachaId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [canAdvance, setCanAdvance] = useState(false);
   const [isAuto, setIsAuto] = useState(false);
-  const [isSkip, setIsSkip] = useState(false);
+  const [telop, setTelop] = useState<ResultDisplay | null>(null);
+  const [cards, setCards] = useState<CardData[] | null>(null);
+  const [cardLoading, setCardLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isAutoRef = useRef(false);
 
-  const currentVideo: StorySequenceItem | null = useMemo(() => {
-    if (!story) return null;
-    return story.video_sequence[currentIndex] ?? null;
-  }, [story, currentIndex]);
+  const resetAll = useCallback(() => {
+    setStatus("idle");
+    setStory(null);
+    setGachaId(null);
+    setCards(null);
+    setCurrentIndex(0);
+    setCanAdvance(false);
+    setIsAuto(false);
+    isAutoRef.current = false;
+    setTelop(null);
+  }, []);
+
+  const normalizedSequence: StorySequenceWithDisplay[] = useMemo(() => {
+    if (!story) return [];
+
+    const seq: StorySequenceWithDisplay[] = [];
+
+    const standby = pickStandby(story.star);
+    seq.push({
+      order: 1,
+      video_id: standby.id,
+      category: "standby",
+      filename: standby.filename,
+      duration_seconds: 0,
+      result_display: { type: "none", text: "", color: "none", show_next_button: true },
+    });
+
+    const countdown = pickCountdown(story.star);
+    seq.push({
+      order: 2,
+      video_id: countdown.id,
+      category: "countdown",
+      filename: countdown.filename,
+      duration_seconds: 0,
+      result_display: { type: "none", text: "", color: "none", show_next_button: true },
+    });
+
+    const baseStart = seq.length;
+    story.video_sequence.forEach((item, idx) => {
+      seq.push({
+        ...item,
+        order: baseStart + idx + 1,
+        result_display: { type: "none", text: "", color: "none", show_next_button: true },
+      });
+    });
+
+    if (seq.length === 0) return seq;
+
+    const lastIndex = seq.length - 1;
+    const hasChase = story.has_chase;
+
+    const shouldSkipContinue = (category: StorySequenceWithDisplay["category"]) =>
+      category === "standby" || category === "countdown";
+
+    if (hasChase && seq.length >= 2) {
+      const chanceIndex = lastIndex - 1;
+      seq[chanceIndex].result_display = {
+        type: "tsuigeki_chance",
+        text: "追撃チャンス！",
+        color: "gold",
+        show_next_button: true,
+      };
+      seq[lastIndex].result_display = {
+        type: story.chase_result === "success" ? "tsuigeki_success" : "tsuigeki_fail",
+        text: story.chase_result === "success" ? "追撃成功！！" : "追撃失敗...",
+        color: story.chase_result === "success" ? "rainbow" : "gray",
+        show_next_button: false,
+      };
+      for (let i = 0; i < chanceIndex; i += 1) {
+        if (seq[i].result_display.type === "none" && !shouldSkipContinue(seq[i].category)) {
+          seq[i].result_display = { type: "continue", text: "継続！", color: "green", show_next_button: true };
+        }
+      }
+    } else {
+      for (let i = 0; i < seq.length; i += 1) {
+        const isLast = i === lastIndex;
+        if (isLast) {
+          if (story.result === "lose") {
+            seq[i].result_display = { type: "lose", text: "ハズレ...", color: "red", show_next_button: false };
+          } else if (story.result === "big_win") {
+            seq[i].result_display = { type: "win", text: "大当たり！！", color: "gold", show_next_button: false };
+          } else if (story.result === "jackpot") {
+            seq[i].result_display = { type: "win", text: "超大当たり！！！", color: "rainbow", show_next_button: false };
+          } else {
+            seq[i].result_display = { type: "win", text: "当たり！", color: "gold", show_next_button: false };
+          }
+        } else if (seq[i].result_display.type === "none" && !shouldSkipContinue(seq[i].category)) {
+          seq[i].result_display = { type: "continue", text: "継続！", color: "green", show_next_button: true };
+        }
+      }
+    }
+
+    return seq;
+  }, [story]);
+
+  const currentVideo: StorySequenceWithDisplay | null = useMemo(() => {
+    return normalizedSequence[currentIndex] ?? null;
+  }, [currentIndex, normalizedSequence]);
 
   const start = useCallback(async () => {
     setStatus("loading");
     setError(null);
     setStory(null);
+    setGachaId(null);
+    setCards(null);
     setCurrentIndex(0);
     setCanAdvance(false);
     setIsAuto(false);
-    setIsSkip(false);
     isAutoRef.current = false;
+    setTelop(null);
     try {
       const res = await fetch("/api/gacha/v4/play", { method: "POST" });
       const data = (await res.json()) as GachaPlayResponse | { error?: string };
       if (!res.ok || "error" in data) throw new Error((data as { error?: string }).error ?? "start failed");
 
       const storyRes = (data as GachaPlayResponse).story;
+      setGachaId((data as GachaPlayResponse).gacha_id);
       setStory(storyRes);
       setStatus("playing");
       setCurrentIndex(0);
@@ -59,11 +208,31 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     }
   }, []);
 
+  const fetchCards = useCallback(async (id: string | null, star: number) => {
+    setCardLoading(true);
+    try {
+      const res = await fetch("/api/gacha/v3/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gacha_id: id }),
+      });
+      const data = (await res.json()) as { cards?: CardData[] };
+      const payload = (data.cards ?? []).map((c) => ({ ...c, star: c.star ?? star }));
+      setCards(payload.length ? payload : null);
+    } catch (err) {
+      console.error("fetch cards failed", err);
+      setCards(null);
+    } finally {
+      setCardLoading(false);
+    }
+  }, []);
+
   const advance = useCallback(() => {
     if (!story) return;
+    setTelop(null);
     setCanAdvance(false);
     const next = currentIndex + 1;
-    if (next < story.video_sequence.length) {
+    if (next < normalizedSequence.length) {
       setCurrentIndex(next);
       const node = videoRef.current;
       if (node) {
@@ -72,29 +241,51 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
       }
       return;
     }
-    setStatus("result");
-  }, [currentIndex, story]);
+    void fetchCards(gachaId, story.star);
+    setStatus("card");
+  }, [currentIndex, fetchCards, gachaId, normalizedSequence.length, story]);
+
+  const handleNext = useCallback(() => {
+    if (!story || !canAdvance) return;
+    advance();
+  }, [advance, canAdvance, story]);
 
   const handleEnded = useCallback(() => {
-    if (!story) return;
-    if (isSkip) {
-      setStatus("result");
-      return;
-    }
+    if (!story || !currentVideo) return;
+    const rd = currentVideo.result_display;
+    setTelop(rd);
 
-    if (isAutoRef.current) {
-      setTimeout(() => advance(), 120);
+    const afterTelop = () => {
+      if (rd?.show_next_button && currentIndex < normalizedSequence.length - 1) {
+        if (isAutoRef.current) {
+          setTimeout(() => advance(), 100);
+        } else {
+          setCanAdvance(true);
+        }
+      } else {
+        void fetchCards(gachaId, story.star);
+        setStatus("card");
+      }
+    };
+
+    if (rd && rd.type !== "none") {
+      setCanAdvance(false);
+      setTimeout(() => {
+        setTelop(null);
+        afterTelop();
+      }, 1800);
     } else {
-      setCanAdvance(true);
+      afterTelop();
     }
-  }, [advance, isSkip, story]);
+  }, [advance, currentIndex, currentVideo, fetchCards, gachaId, normalizedSequence.length, story]);
 
   const handleSkip = useCallback(() => {
     if (!story) return;
-    setIsSkip(true);
+    setTelop(null);
+    void fetchCards(gachaId, story.star);
+    setStatus("card");
     setCanAdvance(false);
-    setStatus("result");
-  }, [story]);
+  }, [fetchCards, gachaId, story]);
 
   // isAuto反映
   useEffect(() => {
@@ -106,20 +297,16 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
     if (status !== "playing") return;
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setStatus("idle");
-        setStory(null);
-        setCurrentIndex(0);
-        setIsAuto(false);
-        isAutoRef.current = false;
+        resetAll();
       }
     };
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
-  }, [status]);
+  }, [resetAll, status]);
 
   // 全画面中はスクロール抑制＆nav非表示
   useEffect(() => {
-    if (status === "playing") {
+    if (status === "playing" || status === "card") {
       document.body.style.overflow = "hidden";
       const tabBar = document.querySelector("nav") as HTMLElement | null;
       if (tabBar) tabBar.style.display = "none";
@@ -163,12 +350,43 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
             onError={handleEnded}
           />
 
+          {telop && telop.type !== "none" && (
+            <div className="pointer-events-none absolute inset-0 z-[120] flex items-center justify-center bg-black/60">
+              <div
+                className="px-6 py-4 text-center"
+                style={{
+                  animation: "telop-emerge 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                  transform: "scale(0.3)",
+                  opacity: 0,
+                }}
+              >
+                <span
+                  className={`font-serif text-5xl font-extrabold tracking-[0.1em] drop-shadow-[0_6px_18px_rgba(0,0,0,0.8)] ${
+                    telop.color === "green"
+                      ? "text-emerald-300"
+                      : telop.color === "red"
+                        ? "text-red-400"
+                        : telop.color === "rainbow"
+                          ? "bg-gradient-to-r from-red-400 via-yellow-300 to-blue-400 bg-clip-text text-transparent"
+                          : telop.color === "gold"
+                            ? "bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent"
+                            : telop.color === "gray"
+                              ? "text-gray-300"
+                              : "text-white"
+                  }`}
+                >
+                  {telop.text}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Footer buttons (no counter) */}
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-12">
             <div className="flex items-center gap-6">
               <button
                 type="button"
-                onClick={advance}
+                onClick={handleNext}
                 disabled={!canAdvance || isAuto}
                 className="pointer-events-auto group relative h-32 w-32 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 shadow-[0_8px_32px_rgba(220,38,38,0.6),0_0_80px_rgba(220,38,38,0.4),inset_0_2px_8px_rgba(255,255,255,0.3),inset_0_-4px_12px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_40px_rgba(220,38,38,0.8),0_0_100px_rgba(220,38,38,0.6)] active:scale-95 disabled:opacity-50"
               >
@@ -217,75 +435,94 @@ export function GachaV4Player({ playLabel = "ガチャを回す", playClassName 
         </div>
       )}
 
-      {status === "result" && story && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black">
-          <ResultTelop result={story.result} hasChase={story.has_chase} />
-          <button
-            type="button"
-            onClick={() => setStatus("idle")}
-            className="absolute bottom-10 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-xs uppercase tracking-[0.3em] text-white shadow-lg"
-          >
-            もう一度
-          </button>
-        </div>
+      {status === "card" && story && (
+        <CardReveal story={story} cards={cards} loading={cardLoading} onClose={resetAll} />
       )}
+
+      <style jsx global>{`
+        @keyframes telop-emerge {
+          0% { transform: scale(0.3) translateZ(-400px) rotateX(25deg); opacity: 0; }
+          50% { opacity: 1; }
+          70% { transform: scale(1.05) translateZ(50px) rotateX(-5deg); }
+          100% { transform: scale(1) translateZ(0) rotateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
 
-type TelopProps = { result: StoryPlay["result"]; hasChase: boolean };
+type CardRevealProps = {
+  story: StoryPlay;
+  cards: CardData[] | null;
+  loading: boolean;
+  onClose: () => void;
+};
 
-function ResultTelop({ result, hasChase }: TelopProps) {
-  let bg = "from-black via-gray-900 to-black";
-  let main = "ハズレ";
-  let sub = "残念...";
-  let duration = 3000;
-  let mainClass = "text-red-400";
+function CardReveal({ story, cards, loading, onClose }: CardRevealProps) {
+  const fallback: CardData = {
+    id: "demo-iraira",
+    name: "イライラ尊師",
+    image_url: "/iraira.png",
+    star: story.star,
+    serial_number: null,
+  };
 
-  if (result === "small_win" || result === "win") {
-    bg = "from-indigo-900 via-purple-800 to-blue-800";
-    main = "当たり！";
-    sub = "おめでとう！";
-    mainClass = "text-amber-200";
-    duration = 4000;
-  }
-  if (result === "big_win") {
-    bg = "from-amber-500 via-orange-500 to-amber-700";
-    main = "大当たり！！";
-    sub = "凄いっす！！";
-    mainClass = "text-amber-100";
-    duration = 5000;
-  }
-  if (result === "jackpot") {
-    bg = "from-pink-500 via-purple-500 to-emerald-400";
-    main = "超大当たり！！！";
-    sub = "伝説降臨！！！";
-    mainClass = "bg-gradient-to-r from-red-200 via-yellow-200 to-blue-200 bg-clip-text text-transparent";
-    duration = 6000;
-  }
-  if (hasChase && (result === "big_win" || result === "jackpot")) {
-    // for chase state heading into TS01
-    bg = "from-purple-800 via-amber-600 to-yellow-500";
-    main = "追撃チャンス！";
-    sub = "まだ終わらない...";
-    mainClass = "text-amber-200";
-    duration = 3000;
-  }
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      // auto close handled by parent via state reset
-    }, duration);
-    return () => clearTimeout(t);
-  }, [duration]);
+  const derivedCount = story.result === "lose" ? 0 : story.result === "big_win" ? 2 : story.result === "jackpot" ? 3 : 1;
+  const baseList = cards && cards.length ? cards : derivedCount === 0 ? [] : [fallback];
+  const list = derivedCount === 0
+    ? []
+    : baseList.length >= derivedCount
+      ? baseList.slice(0, derivedCount)
+      : [
+          ...baseList,
+          ...Array.from({ length: derivedCount - baseList.length }, (_, idx) => ({
+            ...fallback,
+            id: `${fallback.id}-${idx + baseList.length}`,
+          })),
+        ];
+  const count = list.length;
 
   return (
-    <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${bg} animate-[pulse_2s_ease-in-out_infinite]`}>
-      <div className="text-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]">
-        <div className={`text-6xl font-black tracking-[0.08em] sm:text-7xl md:text-8xl ${mainClass}`}>
-          {main}
-        </div>
-        <div className="mt-4 text-xl font-semibold text-white/90">{sub}</div>
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-gradient-to-br from-black via-zinc-950 to-black">
+      <div className="relative flex w-full max-w-md flex-col items-center gap-6 rounded-[28px] border border-white/15 bg-[rgba(12,10,20,0.92)] p-6 shadow-[0_35px_80px_rgba(0,0,0,0.75)]">
+        <p className="text-xs uppercase tracking-[0.4em] text-neon-yellow">Result</p>
+        <p className="text-2xl font-display text-white">★{story.star} / {count}枚</p>
+
+        {loading ? (
+          <p className="text-sm text-white/80">カードを取得中...</p>
+        ) : list.length === 0 ? (
+          <p className="text-sm text-white/80">カードはありません</p>
+        ) : (
+          <div className="w-full space-y-3">
+            {list.map((card) => (
+              <div key={card.id} className="relative overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-b from-white/10 to-black/40 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(236,72,153,0.2),transparent_40%)]" />
+                <Image
+                  src={card.image_url}
+                  alt={card.name}
+                  width={640}
+                  height={960}
+                  className="relative z-10 w-full object-contain"
+                  priority
+                />
+                <div className="absolute bottom-3 left-0 right-0 z-10 px-4 text-center">
+                  <p className="font-display text-xl text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">{card.name}</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/80">
+                    {card.serial_number ? `No. ${card.serial_number}` : "SERIAL"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full max-w-xs rounded-full bg-gradient-to-r from-neon-pink to-neon-yellow px-5 py-3 text-sm font-bold uppercase tracking-[0.25em] text-black shadow-neon"
+        >
+          もう一度
+        </button>
       </div>
     </div>
   );
